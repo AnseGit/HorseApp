@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="HesteVenn er en visuell prototype for å finne hest eller rytter.">
+  <title>HesteVenn | Finn din hestevenn</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="site-header">
+    <nav class="navigation container" aria-label="Hovednavigasjon">
+      <a class="logo" href="#top" aria-label="HesteVenn, til toppen"><span aria-hidden="true">✦</span> HesteVenn</a>
+      <button class="menu-toggle" type="button" aria-expanded="false" aria-controls="nav-links">Meny <span aria-hidden="true">☰</span></button>
+      <div class="nav-links" id="nav-links">
+        <a href="#hester">Finn hest</a>
+        <a href="#roller">Finn rytter</a>
+        <a href="#slik-fungerer-det">Slik fungerer det</a>
+        <button class="button button-small prototype-button" type="button">Utforsk HesteVenn</button>
+      </div>
+    </nav>
+  </header>
+
+  <main id="top">
+    <section class="role-section section container" id="roller">
+      <div class="section-heading">
+        <h2>Hva passer best for deg?</h2>
+      </div>
+      <div class="role-grid">
+        <button class="role-card owner-card" type="button" data-role="eier" aria-pressed="false">
+          <span class="role-icon" aria-hidden="true">♞</span>
+          <span class="role-title">Jeg har hest</span>
+          <span class="role-copy">Finn en passende rytter og fortell hva hesten din trenger.</span>
+          <span class="role-list">Trening, mosjon eller stell <b aria-hidden="true">→</b></span>
+        </button>
+        <button class="role-card rider-card" type="button" data-role="rytter" aria-pressed="false">
+          <span class="role-icon" aria-hidden="true">⌁</span>
+          <span class="role-title">Jeg ønsker å ri</span>
+          <span class="role-copy">Vis erfaringen din og oppdag hester og aktiviteter i nærheten.</span>
+          <span class="role-list">Finn din nye ridevenn <b aria-hidden="true">→</b></span>
+        </button>
+      </div>
+    </section>
+
+    <section class="horses-section section" id="hester">
+      <div class="container">
+        <div class="section-heading heading-row">
+          <div><p class="eyebrow">Noen hester i nærheten</p><h2>Møt din neste turkamerat</h2></div>
+          <div class="filter-group" aria-label="Filtrer hester">
+            <button class="filter-button is-active" type="button" data-filter="alle">Alle</button>
+            <button class="filter-button" type="button" data-filter="tur">Tur</button>
+            <button class="filter-button" type="button" data-filter="dressur">Dressur</button>
+          </div>
+        </div>
+        <div class="horse-grid">
+          <article class="horse-card" data-category="tur dressur">
+            <div class="horse-image image-fjell"><img src="https://images.unsplash.com/photo-1551884831-bbf3cdc6469e?auto=format&fit=crop&w=800&q=80" alt="Brun hest med mørk man i et åpent landskap"></div>
+            <div class="horse-content"><div class="horse-title"><h3>Fjellglimt</h3><span>11 år</span></div><p>Nordlandshest · Øyer</p><dl><div><dt>Passer for</dt><dd>Turridning og lett dressur</dd></div><div><dt>Ønsket erfaring</dt><dd>Øvet rytter</dd></div></dl><div class="tags"><span>Trygg på tur</span><span>Stødig</span></div><button class="profile-button" type="button" data-horse="Fjellglimt" data-info="En rolig og nysgjerrig nordlandshest som trives best på stiene rundt Øyer. Eier ønsker en fast rytter 1–2 ganger i uken.">Se profil</button></div>
+          </article>
+          <article class="horse-card" data-category="dressur">
+            <div class="horse-image image-sol"><img src="https://images.unsplash.com/photo-1598974357801-cbca100e65d3?auto=format&fit=crop&w=800&q=80" alt="Lys brun hest med rytter i ridebane"></div>
+            <div class="horse-content"><div class="horse-title"><h3>Solstjerne</h3><span>8 år</span></div><p>Fjordhest · Asker</p><dl><div><dt>Passer for</dt><dd>Dressur og banearbeid</dd></div><div><dt>Ønsket erfaring</dt><dd>Erfaren rytter</dd></div></dl><div class="tags"><span>Lærevillig</span><span>Dressur</span></div><button class="profile-button" type="button" data-horse="Solstjerne" data-info="En følsom, men svært lærevillig fjordhest som søker en rolig og rutinert person til dressurarbeid to ettermiddager i uken.">Se profil</button></div>
+          </article>
+          <article class="horse-card" data-category="tur">
+            <div class="horse-image image-ember"><img src="https://images.unsplash.com/photo-1522789592756-1b57d1dc63f9?auto=format&fit=crop&w=800&q=80" alt="Mørk hest som står på en grønn eng"></div>
+            <div class="horse-content"><div class="horse-title"><h3>Ember</h3><span>14 år</span></div><p>Dølahest · Lillehammer</p><dl><div><dt>Passer for</dt><dd>Rolige turer og kjøring</dd></div><div><dt>Ønsket erfaring</dt><dd>Trygg nybegynner</dd></div></dl><div class="tags"><span>Barnevennlig</span><span>Uteglad</span></div><button class="profile-button" type="button" data-horse="Ember" data-info="En vennlig dølahest med mye livserfaring. Ember liker rolige skogsturer og passer godt for en trygg nybegynner med veiledning.">Se profil</button></div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="match-section section container">
+      <div class="match-panel">
+        <div class="match-copy"><p class="eyebrow">Et mulig treff</p><h2>Fjellglimt og Nora kan bli et fint lag</h2><p>Når behov, erfaring og hverdag passer sammen, blir det lettere å bygge tillit over tid.</p><button class="button prototype-button" type="button">Se flere mulige matcher</button></div>
+        <div class="match-people">
+          <div class="match-person"><span class="person-avatar horse-avatar" aria-hidden="true">♞</span><strong>Fjellglimt</strong><small>11 år · Øyer</small></div>
+          <div class="match-score"><strong>92%</strong><span>God match</span></div>
+          <div class="match-person"><span class="person-avatar rider-avatar" aria-hidden="true">N</span><strong>Nora</strong><small>Rytter · Lillehammer</small></div>
+        </div>
+        <ul class="match-reasons"><li>◉ Bor 8 km unna</li><li>◉ Erfaringen passer hestens behov</li><li>◉ Begge er interessert i turridning</li></ul>
+      </div>
+    </section>
+
+    <section class="how-section section" id="slik-fungerer-det"><div class="container"><div class="section-heading centered"><p class="eyebrow">Enkelt å utforske</p><h2>Slik fungerer HesteVenn</h2></div><div class="steps"><article><span class="step-number">01</span><span class="step-icon" aria-hidden="true">◎</span><h3>Opprett en profil</h3><p>Fortell om hesten din, eller del erfaringen og det du liker å gjøre i salen.</p></article><article><span class="step-number">02</span><span class="step-icon" aria-hidden="true">⌕</span><h3>Finn en passende hest eller rytter</h3><p>Utforsk profiler som passer med hverdagen, nivået og ønskene dine.</p></article><article><span class="step-number">03</span><span class="step-icon" aria-hidden="true">✦</span><h3>Avtal en aktivitet</h3><p>Ta kontakt og finn en god ramme for første tur, økt eller møte i stallen.</p></article></div></div></section>
+
+    <section class="activity-section section container"><div class="activity-card"><div><p class="eyebrow">Et glimt av hverdagen</p><h2>Neste aktivitet</h2><p class="activity-type">Skogstur i rolig tempo</p></div><div class="activity-details"><div><span>Hest</span><strong>Ember</strong></div><div><span>Rytter</span><strong>Ida L.</strong></div><div><span>Når</span><strong>Lørdag 10:30</strong></div><div><span>Sted</span><strong>Mesna, Lillehammer</strong></div></div><span class="status">Avtalt</span></div></section>
+
+    <section class="final-section"><div class="container final-content"><p class="eyebrow">Hestevenner venter</p><h2>Et godt samarbeid begynner med en liten introduksjon.</h2><button class="button button-light prototype-button" type="button">Utforsk HesteVenn</button></div></section>
+  </main>
+
+  <footer class="site-footer"><div class="container footer-content"><div><a class="logo" href="#top"><span aria-hidden="true">✦</span> HesteVenn</a><p>En møteplass for gode dager med hest.</p></div><div class="footer-links"><a href="#top">Om HesteVenn</a><a href="#top">Personvern</a><a href="#top">Kontakt</a></div></div></footer>
+  <div class="toast" role="status" aria-live="polite">Dette er en visuell prototype – funksjonen kommer senere.</div>
+  <div class="modal" id="horse-modal" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="modal-title"><div class="modal-content"><button class="modal-close" type="button" aria-label="Lukk profil">×</button><p class="eyebrow">Hesteprofil</p><h2 id="modal-title">Fjellglimt</h2><p id="modal-description"></p><button class="button prototype-button" type="button">Vis interesse</button></div></div>
+  <script src="script.js"></script>
+</body>
+</html>
