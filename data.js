@@ -32,7 +32,7 @@ window.HesteVennData = {
     { id: 'EVENT-001', name: 'Fellestur ved Mesna', organizerId: 'USER-001', location: 'Lillehammer', date: '2026-10-17', startTime: '11:00', qualifications: ['Trygg på tur'], description: 'Rolig fellestur med pause underveis.', participantIds: ['USER-002'] },
     { id: 'EVENT-002', name: 'Introduksjon til dressur', organizerId: 'USER-005', location: 'Asker', date: '2026-10-20', startTime: '18:00', qualifications: ['Grunnleggende rideerfaring'], description: 'En sosial kveld med enkle dressurøvelser.', participantIds: ['USER-001'] },
     { id: 'EVENT-003', name: 'Stelldag i stallen', organizerId: 'USER-003', location: 'Kristiansand', date: '2026-10-24', startTime: '10:00', qualifications: ['Ingen forkunnskaper'], description: 'Felles stell, puss og rydding i stallen.', participantIds: ['USER-004', 'USER-006'] },
-    { id: 'EVENT-004', name: 'Turtreff på Hamar', organizerId: 'USER-006', location: 'Hamar', date: '2026-10-31', startTime: '12:30', qualifications: ['Øvet rytter'], description: 'Turtreff for ryttere som er trygge i alle gangarter.', participantIds: [] }
+    { id: 'EVENT-004', name: 'Leirskole i høstferien', organizerId: 'USER-006', location: 'Kristiansand', date: '2026-10-31', startTime: '12:30', qualifications: ['For alle'], description: 'Bli med på leirskole i stallen i høstferien', participantIds: [] }
   ],
   activities: [
     { id: 'ACTIVITY-001', name: 'Skogstur i rolig tempo', horseId: 'HORSE-001', userId: 'USER-002', activityType: 'Turridning', date: '2026-09-20', startTime: '10:30', duration: '90 min', location: 'Kristiansand', status: 'Godkjent', notes: 'Møtes ved ridebanen.' },
