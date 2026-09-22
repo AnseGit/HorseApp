@@ -23,6 +23,17 @@ window.HesteVennData = {
     { id: 'WISH-005', name: 'Rytter til Solstjerne', userId: '', horseId: 'HORSE-002', location: 'Asker', experience: 'Erfaren', qualifications: ['Dressurarbeid'], ridingStyles: ['Dressur', 'Sprang'], horseSize: 'Ikke relevant', comment: 'Tydelig og balansert rytter med erfaring fra følsomme hester.' },
     { id: 'WISH-006', name: 'Turvenn til Ember', userId: '', horseId: 'HORSE-003', location: 'Lillehammer', experience: 'Nybegynner', qualifications: ['Grunnleggende håndtering'], ridingStyles: ['Tur'], horseSize: 'Ikke relevant', comment: 'Trygg person som ønsker rolige turer og gjerne hjelper til med stell.' }
   ],
+  requests: [
+    { id: 'REQUEST-001', name: 'Forespørsel 2026-10-03 10:00', horseId: 'HORSE-001', userId: 'USER-002', date: '2026-10-03', startTime: '10:00', durationHours: 2, activityType: 'Tur', status: 'Under behandling', comment: 'Ønsker en rolig formiddagstur.' },
+    { id: 'REQUEST-002', name: 'Forespørsel 2026-10-05 17:30', horseId: 'HORSE-002', userId: 'USER-001', date: '2026-10-05', startTime: '17:30', durationHours: 1, activityType: 'Dressur', status: 'Godkjent', comment: 'Lett dressurøkt på banen.' },
+    { id: 'REQUEST-003', name: 'Forespørsel 2026-10-08 12:00', horseId: 'HORSE-003', userId: 'USER-004', date: '2026-10-08', startTime: '12:00', durationHours: 1.5, activityType: 'Fôr', status: 'Avslått', comment: 'Kan hjelpe med fôring og stell.' }
+  ],
+  events: [
+    { id: 'EVENT-001', name: 'Fellestur ved Mesna', organizerId: 'USER-001', location: 'Lillehammer', date: '2026-10-17', startTime: '11:00', qualifications: ['Trygg på tur'], description: 'Rolig fellestur med pause underveis.', participantIds: ['USER-002'] },
+    { id: 'EVENT-002', name: 'Introduksjon til dressur', organizerId: 'USER-005', location: 'Asker', date: '2026-10-20', startTime: '18:00', qualifications: ['Grunnleggende rideerfaring'], description: 'En sosial kveld med enkle dressurøvelser.', participantIds: ['USER-001'] },
+    { id: 'EVENT-003', name: 'Stelldag i stallen', organizerId: 'USER-003', location: 'Øyer', date: '2026-10-24', startTime: '10:00', qualifications: ['Ingen forkunnskaper'], description: 'Felles stell, puss og rydding i stallen.', participantIds: ['USER-004', 'USER-006'] },
+    { id: 'EVENT-004', name: 'Turtreff på Hamar', organizerId: 'USER-006', location: 'Hamar', date: '2026-10-31', startTime: '12:30', qualifications: ['Øvet rytter'], description: 'Turtreff for ryttere som er trygge i alle gangarter.', participantIds: [] }
+  ],
   activities: [
     { id: 'ACTIVITY-001', name: 'Skogstur i rolig tempo', horseId: 'HORSE-001', userId: 'USER-002', activityType: 'Turridning', date: '2026-09-20', startTime: '10:30', duration: '90 min', location: 'Øyer', status: 'Godkjent', notes: 'Møtes ved ridebanen.' },
     { id: 'ACTIVITY-002', name: 'Lett dressurøkt', horseId: 'HORSE-001', userId: 'USER-001', activityType: 'Dressur', date: '2026-09-22', startTime: '17:00', duration: '60 min', location: 'Øyer', status: 'Planlagt', notes: 'Fokus på overganger.' },
