@@ -10,23 +10,23 @@
   const singular = { users: 'user', horses: 'horse', wishes: 'wish', requests: 'request', events: 'event', activities: 'activity', qualifications: 'qualification', incidents: 'incident' };
   const descriptions = { users: 'Personer som eier hest, rir eller gjør begge deler.', horses: 'Hester og deres behov, egenskaper og stalltilhørighet.', wishes: 'Rideønsker fra Ryttere og ønsker om ryttere for hester.', requests: 'Forespørsler fra ryttere om å låne en hest på et bestemt tidspunkt.', events: 'Hestearrangementer som Ryttere kan opprette og delta på.', activities: 'Planlagte og gjennomførte aktiviteter mellom hest og rytter.', qualifications: 'Erfaringer og godkjenninger knyttet til en bruker og en hest.', incidents: 'Oppfølging av hendelser og helse rundt hestene.' };
   const columns = {
-    users: [['name', 'Navn'], ['role', 'Rolle'], ['location', 'Sted'], ['experienceLevel', 'Erfaringsnivå'], ['active', 'Aktiv']],
-    horses: [['name', 'Navn'], ['ownerId', 'Eier'], ['age', 'Alder'], ['breed', 'Rase'], ['location', 'Sted'], ['experienceRequirement', 'Krever erfaring'], ['active', 'Aktiv']],
-    wishes: [['name', 'Ønske'], ['userId', 'Bruker'], ['horseId', 'Hest'], ['location', 'Sted'], ['experience', 'Erfaring'], ['ridingStyles', 'Ridestil']],
+    users: [['name', 'Navn'], ['role', 'Rolle'], ['location', 'By'], ['experienceLevel', 'Erfaringsnivå'], ['active', 'Aktiv']],
+    horses: [['name', 'Navn'], ['ownerId', 'Eier'], ['age', 'Alder'], ['breed', 'Rase'], ['location', 'By'], ['experienceRequirement', 'Krever erfaring'], ['active', 'Aktiv']],
+    wishes: [['name', 'Ønske'], ['userId', 'Bruker'], ['horseId', 'Hest'], ['location', 'By'], ['experience', 'Erfaring'], ['ridingStyles', 'Ridestil']],
     requests: [['name', 'Forespørsel'], ['horseId', 'Hest'], ['userId', 'Rytter'], ['date', 'Dato'], ['startTime', 'Tid'], ['durationHours', 'Varighet'], ['activityType', 'Aktivitet'], ['status', 'Status']],
-    events: [['name', 'Navn'], ['location', 'Sted'], ['date', 'Dato'], ['startTime', 'Tidspunkt'], ['qualifications', 'Kvalifikasjoner']],
+    events: [['name', 'Navn'], ['location', 'By'], ['date', 'Dato'], ['startTime', 'Tidspunkt'], ['qualifications', 'Kvalifikasjoner']],
     activities: [['name', 'Aktivitet'], ['horseId', 'Hest'], ['userId', 'Rytter'], ['date', 'Dato'], ['activityType', 'Type'], ['status', 'Status']],
     qualifications: [['name', 'Kvalifikasjon'], ['userId', 'Bruker'], ['horseId', 'Hest'], ['qualificationType', 'Type'], ['level', 'Nivå'], ['status', 'Status']],
     incidents: [['name', 'Hendelse'], ['horseId', 'Hest'], ['date', 'Dato'], ['incidentType', 'Type'], ['severity', 'Alvorlighet'], ['status', 'Status']]
   };
   const filters = { users: [['role', 'Alle roller'], ['location', 'Alle steder'], ['active', 'Alle statuser']], horses: [['breed', 'Alle raser'], ['location', 'Alle steder'], ['active', 'Alle statuser']], wishes: [['location', 'Alle steder'], ['experience', 'All erfaring'], ['ridingStyles', 'Alle ridestiler']], requests: [['status', 'Alle statuser'], ['activityType', 'Alle aktiviteter']], events: [['location', 'Alle steder'], ['qualifications', 'Alle kvalifikasjoner']], activities: [['status', 'Alle statuser'], ['activityType', 'Alle typer']], qualifications: [['status', 'Alle statuser'], ['level', 'Alle nivåer']], incidents: [['status', 'Alle statuser'], ['severity', 'Alle alvorlighetsgrader']] };
   const detailFields = {
-    users: [['role', 'Rolle'], ['location', 'Sted'], ['experienceLevel', 'Erfaringsnivå'], ['yearsOfExperience', 'År med erfaring'], ['email', 'E-post'], ['phone', 'Telefon'], ['biography', 'Biografi'], ['active', 'Aktiv']],
-    horses: [['ownerId', 'Eier'], ['age', 'Alder'], ['breed', 'Rase'], ['gender', 'Kjønn'], ['height', 'Mankehøyde'], ['location', 'Sted'], ['experienceRequirement', 'Krever erfaring'], ['temperament', 'Temperament'], ['suitableActivities', 'Passer til'], ['description', 'Beskrivelse'], ['active', 'Aktiv']],
-    wishes: [['userId', 'Bruker'], ['horseId', 'Hest'], ['location', 'Sted'], ['experience', 'Erfaring'], ['qualifications', 'Kvalifikasjoner'], ['ridingStyles', 'Ridestil'], ['horseSize', 'Størrelse på hest'], ['comment', 'Kommentar']],
+    users: [['role', 'Rolle'], ['location', 'By'], ['experienceLevel', 'Erfaringsnivå'], ['yearsOfExperience', 'År med erfaring'], ['email', 'E-post'], ['phone', 'Telefon'], ['biography', 'Biografi'], ['active', 'Aktiv']],
+    horses: [['ownerId', 'Eier'], ['age', 'Alder'], ['breed', 'Rase'], ['gender', 'Kjønn'], ['height', 'Mankehøyde'], ['location', 'By'], ['experienceRequirement', 'Krever erfaring'], ['temperament', 'Temperament'], ['suitableActivities', 'Passer til'], ['description', 'Beskrivelse'], ['active', 'Aktiv']],
+    wishes: [['userId', 'Bruker'], ['horseId', 'Hest'], ['location', 'By'], ['experience', 'Erfaring'], ['qualifications', 'Kvalifikasjoner'], ['ridingStyles', 'Ridestil'], ['horseSize', 'Størrelse på hest'], ['comment', 'Kommentar']],
     requests: [['horseId', 'Hest'], ['userId', 'Rytter'], ['date', 'Dato'], ['startTime', 'Tidspunkt'], ['durationHours', 'Varighet (timer)'], ['activityType', 'Type aktivitet'], ['status', 'Forespørsel status'], ['comment', 'Kommentar']],
-    events: [['organizerId', 'Arrangør'], ['location', 'Sted'], ['date', 'Dato'], ['startTime', 'Tidspunkt'], ['qualifications', 'Kvalifikasjoner'], ['description', 'Beskrivelse'], ['participantIds', 'Deltakere']],
-    activities: [['horseId', 'Hest'], ['userId', 'Rytter'], ['activityType', 'Type'], ['date', 'Dato'], ['startTime', 'Starttid'], ['duration', 'Varighet'], ['location', 'Sted'], ['status', 'Status'], ['notes', 'Notater']],
+    events: [['organizerId', 'Arrangør'], ['location', 'By'], ['date', 'Dato'], ['startTime', 'Tidspunkt'], ['qualifications', 'Kvalifikasjoner'], ['description', 'Beskrivelse'], ['participantIds', 'Deltakere']],
+    activities: [['horseId', 'Hest'], ['userId', 'Rytter'], ['activityType', 'Type'], ['date', 'Dato'], ['startTime', 'Starttid'], ['duration', 'Varighet'], ['location', 'By'], ['status', 'Status'], ['notes', 'Notater']],
     qualifications: [['userId', 'Bruker'], ['horseId', 'Hest'], ['qualificationType', 'Type'], ['level', 'Nivå'], ['status', 'Status'], ['description', 'Beskrivelse'], ['validFrom', 'Gyldig fra'], ['validUntil', 'Gyldig til']],
     incidents: [['horseId', 'Hest'], ['date', 'Dato'], ['incidentType', 'Type'], ['severity', 'Alvorlighet'], ['description', 'Beskrivelse'], ['actionTaken', 'Tiltak'], ['status', 'Status']]
   };
@@ -36,7 +36,7 @@
     users: [
       { key: 'image', label: 'Profilbilde', type: 'image', wide: true },
       { key: 'name', label: 'Navn', required: true, autocomplete: 'name' }, { key: 'role', label: 'Rolle', type: 'select', required: true, options: ['Rytter', 'Hesteeier', 'Begge'] },
-      { key: 'location', label: 'Sted', required: true }, { key: 'experienceLevel', label: 'Erfaringsnivå', type: 'select', required: true, options: ['Nybegynner', 'Øvet', 'Erfaren'] },
+      { key: 'location', label: 'By', required: true }, { key: 'experienceLevel', label: 'Erfaringsnivå', type: 'select', required: true, options: ['Nybegynner', 'Øvet', 'Erfaren'] },
       { key: 'yearsOfExperience', label: 'År med erfaring', type: 'number', required: true, min: 0, max: 80, value: 0 }, { key: 'email', label: 'E-post', type: 'email' },
       { key: 'phone', label: 'Telefon', type: 'tel' }, { key: 'biography', label: 'Biografi', type: 'textarea', wide: true }
     ],
@@ -45,13 +45,13 @@
       { key: 'name', label: 'Navn', required: true }, { key: 'ownerId', label: 'Eier', type: 'reference', source: 'users', required: true },
       { key: 'age', label: 'Alder', type: 'number', min: 0, max: 50, required: true }, { key: 'breed', label: 'Rase', required: true },
       { key: 'gender', label: 'Kjønn', type: 'select', required: true, options: ['Hoppe', 'Vallak', 'Hingst'] }, { key: 'height', label: 'Mankehøyde', placeholder: 'For eksempel 150 cm' },
-      { key: 'location', label: 'Sted', required: true }, { key: 'experienceRequirement', label: 'Krever erfaring', type: 'select', required: true, options: ['Alle nivåer', 'Trygg nybegynner', 'Øvet rytter', 'Erfaren rytter'] },
+      { key: 'location', label: 'By', required: true }, { key: 'experienceRequirement', label: 'Krever erfaring', type: 'select', required: true, options: ['Alle nivåer', 'Trygg nybegynner', 'Øvet rytter', 'Erfaren rytter'] },
       { key: 'temperament', label: 'Temperament' }, { key: 'suitableActivities', label: 'Passer til', array: true, placeholder: 'Tur, Dressur, Sprang' },
       { key: 'description', label: 'Beskrivelse', type: 'textarea', wide: true }
     ],
     wishes: [
       { key: 'name', label: 'Navn på ønsket', required: true }, { key: 'userId', label: 'Bruker', type: 'reference', source: 'users' },
-      { key: 'horseId', label: 'Hest', type: 'reference', source: 'horses' }, { key: 'location', label: 'Sted', required: true },
+      { key: 'horseId', label: 'Hest', type: 'reference', source: 'horses' }, { key: 'location', label: 'By', required: true },
       { key: 'experience', label: 'Erfaring', type: 'select', required: true, options: ['Nybegynner', 'Øvet', 'Erfaren'] },
       { key: 'qualifications', label: 'Kvalifikasjoner', array: true }, { key: 'ridingStyles', label: 'Ridestil', array: true, required: true, placeholder: 'Tur, Dressur, Sprang' },
       { key: 'horseSize', label: 'Størrelse på hest' }, { key: 'comment', label: 'Kommentar', type: 'textarea', wide: true }
@@ -67,7 +67,7 @@
     ],
     events: [
       { key: 'name', label: 'Navn', required: true }, { key: 'organizerId', label: 'Arrangør', type: 'reference', source: 'users', required: true },
-      { key: 'location', label: 'Sted', required: true }, { key: 'date', label: 'Dato', type: 'date', required: true },
+      { key: 'location', label: 'By', required: true }, { key: 'date', label: 'Dato', type: 'date', required: true },
       { key: 'startTime', label: 'Tidspunkt', type: 'time', required: true },
       { key: 'qualifications', label: 'Kvalifikasjoner', array: true, placeholder: 'For eksempel Trygg på tur, Øvet rytter' },
       { key: 'description', label: 'Beskrivelse', type: 'textarea', wide: true }
@@ -76,7 +76,7 @@
       { key: 'name', label: 'Aktivitet', required: true }, { key: 'horseId', label: 'Hest', type: 'reference', source: 'horses', required: true },
       { key: 'userId', label: 'Rytter', type: 'reference', source: 'users', required: true }, { key: 'activityType', label: 'Type', required: true },
       { key: 'date', label: 'Dato', type: 'date', required: true }, { key: 'startTime', label: 'Starttid', type: 'time', required: true },
-      { key: 'duration', label: 'Varighet', placeholder: 'For eksempel 60 min' }, { key: 'location', label: 'Sted', required: true },
+      { key: 'duration', label: 'Varighet', placeholder: 'For eksempel 60 min' }, { key: 'location', label: 'By', required: true },
       { key: 'status', label: 'Status', type: 'select', required: true, options: ['Planlagt', 'Godkjent', 'Gjennomført', 'Avlyst'] }, { key: 'notes', label: 'Notater', type: 'textarea', wide: true }
     ],
     qualifications: [
@@ -192,7 +192,7 @@
       <section class="home-section"><div class="section-heading"><p class="eyebrow">Kom i gang</p><h2>Hva passer best for deg?</h2></div><div class="choice-grid"><a class="choice-card choice-owner" href="#users${locationFilter}${currentUser ? '/audience/riders' : ''}"><span class="choice-icon" aria-hidden="true">♞</span><strong>Jeg har hest</strong><p>Finn en passende rytter${currentUser ? ` i ${escapeHtml(currentUser.location)}` : ''} og fortell hva hesten din trenger.</p><span class="choice-link">Finn en rytter →</span></a><a class="choice-card choice-rider" href="#horses${locationFilter}"><span class="choice-icon" aria-hidden="true">⌁</span><strong>Jeg ønsker å ri</strong><p>Oppdag hester${currentUser ? ` i ${escapeHtml(currentUser.location)}` : ''} som passer erfaringen og hverdagen din.</p><span class="choice-link">Utforsk hester →</span></a><a class="choice-card choice-event" href="#events${locationFilter}"><span class="choice-icon" aria-hidden="true">◎</span><strong>Utforsk arrangementer</strong><p>Finn arrangementer${currentUser ? ` i ${escapeHtml(currentUser.location)}` : ' i nærheten'} og møt andre hestevenner.</p><span class="choice-link">Se arrangementer →</span></a></div></section>
       <section class="home-section nearby-section"><div class="section-heading heading-row"><div><p class="eyebrow">Noen hester i nærheten</p><h2>Møt din neste turkamerat</h2></div><a class="text-link" href="#horses">Se alle hester →</a></div><div class="home-horse-grid">${horses.map((horse) => `<article class="home-horse-card"><div class="home-horse-art" aria-hidden="true">♞</div><div class="home-horse-content"><div class="home-horse-title"><h3>${escapeHtml(horse.name)}</h3><span>${horse.age} år</span></div><p>${escapeHtml(horse.breed)} · ${escapeHtml(horse.location)}</p><dl><div><dt>Passer for</dt><dd>${escapeHtml(horse.suitableActivities.join(' og '))}</dd></div><div><dt>Ønsket erfaring</dt><dd>${escapeHtml(horse.experienceRequirement)}</dd></div></dl><a class="button button-outline" href="#horse/${horse.id}">Se profil</a></div></article>`).join('')}</div></section>
       <section class="home-section match-strip"><div><p class="eyebrow">Et mulig treff</p><h2>Fjellglimt og Nora kan bli et fint lag</h2><p>Når behov, erfaring og hverdag passer sammen, blir det lettere å bygge tillit over tid.</p></div><div class="match-visual"><span aria-hidden="true">♞</span><strong>92%</strong><span aria-hidden="true">N</span></div><a class="button" href="#horse/HORSE-001">Se Fjellglimt</a></section>
-      <section class="home-section activity-preview"><div><p class="eyebrow">Et glimt av hverdagen</p><h2>Neste aktivitet</h2><p>${escapeHtml(nextActivity.name)}</p></div><div class="activity-preview-details"><div><span>Hest</span><a href="#horse/${nextActivity.horseId}">${escapeHtml(getHorseName(nextActivity.horseId))}</a></div><div><span>Rytter</span><a href="#user/${nextActivity.userId}">${escapeHtml(getUserName(nextActivity.userId))}</a></div><div><span>Når</span><strong>${escapeHtml(nextActivity.date)} · ${escapeHtml(nextActivity.startTime)}</strong></div><div><span>Sted</span><strong>${escapeHtml(nextActivity.location)}</strong></div></div><span class="badge">${escapeHtml(nextActivity.status)}</span></section>
+      <section class="home-section activity-preview"><div><p class="eyebrow">Et glimt av hverdagen</p><h2>Neste aktivitet</h2><p>${escapeHtml(nextActivity.name)}</p></div><div class="activity-preview-details"><div><span>Hest</span><a href="#horse/${nextActivity.horseId}">${escapeHtml(getHorseName(nextActivity.horseId))}</a></div><div><span>Rytter</span><a href="#user/${nextActivity.userId}">${escapeHtml(getUserName(nextActivity.userId))}</a></div><div><span>Når</span><strong>${escapeHtml(nextActivity.date)} · ${escapeHtml(nextActivity.startTime)}</strong></div><div><span>By</span><strong>${escapeHtml(nextActivity.location)}</strong></div></div><span class="badge">${escapeHtml(nextActivity.status)}</span></section>
       <section class="home-section how-section"><div class="section-heading centered"><p class="eyebrow">Enkelt å utforske</p><h2>Slik fungerer HesteVenn</h2></div><div class="steps"><article><span class="step-number">01</span><span class="step-icon" aria-hidden="true">◎</span><h3>Opprett en profil</h3><p>Fortell om hesten din, eller del erfaringen og det du liker å gjøre i salen.</p></article><article><span class="step-number">02</span><span class="step-icon" aria-hidden="true">⌕</span><h3>Finn en passende hest eller rytter</h3><p>Utforsk profiler som passer med hverdagen, nivået og ønskene dine.</p></article><article><span class="step-number">03</span><span class="step-icon" aria-hidden="true">✦</span><h3>Avtal en aktivitet</h3><p>Finn en god ramme for første tur, økt eller møte i stallen.</p></article></div></section>
     </div>`;
   }
