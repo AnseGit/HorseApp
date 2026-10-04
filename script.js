@@ -12,25 +12,25 @@
   const columns = {
     users: [['name', 'Navn'], ['role', 'Rolle'], ['location', 'By'], ['experienceLevel', 'Erfaringsnivå'], ['active', 'Aktiv']],
     horses: [['name', 'Navn'], ['ownerId', 'Eier'], ['age', 'Alder'], ['breed', 'Rase'], ['location', 'By'], ['experienceRequirement', 'Krever erfaring'], ['active', 'Aktiv']],
-    wishes: [['name', 'Ønske'], ['userId', 'Bruker'], ['horseId', 'Hest'], ['location', 'By'], ['experience', 'Erfaring'], ['ridingStyles', 'Ridestil']],
+    wishes: [['name', 'Ønske'], ['userId', 'Bruker'], ['horseId', 'Hest'], ['location', 'By'], ['ønsketype', 'Ønsketype'], ['aktivitetstype', 'Aktivitetstype'], ['status', 'Status']],
     requests: [['name', 'Forespørsel'], ['horseId', 'Hest'], ['userId', 'Rytter'], ['date', 'Dato'], ['startTime', 'Tid'], ['durationHours', 'Varighet'], ['activityType', 'Aktivitet'], ['status', 'Status']],
     events: [['name', 'Navn'], ['location', 'By'], ['date', 'Dato'], ['startTime', 'Tidspunkt'], ['qualifications', 'Kvalifikasjoner']],
     activities: [['name', 'Aktivitet'], ['horseId', 'Hest'], ['userId', 'Rytter'], ['date', 'Dato'], ['activityType', 'Type'], ['status', 'Status']],
     qualifications: [['name', 'Kvalifikasjon'], ['userId', 'Bruker'], ['horseId', 'Hest'], ['qualificationType', 'Type'], ['level', 'Nivå'], ['status', 'Status']],
     incidents: [['name', 'Hendelse'], ['horseId', 'Hest'], ['date', 'Dato'], ['incidentType', 'Type'], ['severity', 'Alvorlighet'], ['status', 'Status']]
   };
-  const filters = { users: [['role', 'Alle roller'], ['location', 'Alle steder'], ['active', 'Alle statuser']], horses: [['breed', 'Alle raser'], ['location', 'Alle steder'], ['active', 'Alle statuser']], wishes: [['location', 'Alle steder'], ['experience', 'All erfaring'], ['ridingStyles', 'Alle ridestiler']], requests: [['status', 'Alle statuser'], ['activityType', 'Alle aktiviteter']], events: [['location', 'Alle steder'], ['qualifications', 'Alle kvalifikasjoner']], activities: [['status', 'Alle statuser'], ['activityType', 'Alle typer']], qualifications: [['status', 'Alle statuser'], ['level', 'Alle nivåer']], incidents: [['status', 'Alle statuser'], ['severity', 'Alle alvorlighetsgrader']] };
+  const filters = { users: [['role', 'Alle roller'], ['location', 'Alle steder'], ['active', 'Alle statuser']], horses: [['breed', 'Alle raser'], ['location', 'Alle steder'], ['active', 'Alle statuser']], wishes: [['location', 'Alle steder'], ['ønsketype', 'Alle ønsketyper'], ['status', 'Alle statuser']], requests: [['status', 'Alle statuser'], ['activityType', 'Alle aktiviteter']], events: [['location', 'Alle steder'], ['qualifications', 'Alle kvalifikasjoner']], activities: [['status', 'Alle statuser'], ['activityType', 'Alle typer']], qualifications: [['status', 'Alle statuser'], ['level', 'Alle nivåer']], incidents: [['status', 'Alle statuser'], ['severity', 'Alle alvorlighetsgrader']] };
   const detailFields = {
     users: [['role', 'Rolle'], ['location', 'By'], ['experienceLevel', 'Erfaringsnivå'], ['yearsOfExperience', 'År med erfaring'], ['email', 'E-post'], ['phone', 'Telefon'], ['biography', 'Biografi'], ['active', 'Aktiv']],
     horses: [['ownerId', 'Eier'], ['age', 'Alder'], ['breed', 'Rase'], ['gender', 'Kjønn'], ['height', 'Mankehøyde'], ['location', 'By'], ['experienceRequirement', 'Krever erfaring'], ['temperament', 'Temperament'], ['suitableActivities', 'Passer til'], ['description', 'Beskrivelse'], ['active', 'Aktiv']],
-    wishes: [['userId', 'Bruker'], ['horseId', 'Hest'], ['location', 'By'], ['experience', 'Erfaring'], ['qualifications', 'Kvalifikasjoner'], ['ridingStyles', 'Ridestil'], ['horseSize', 'Størrelse på hest'], ['comment', 'Kommentar']],
+    wishes: [['userId', 'Bruker'], ['horseId', 'Hest'], ['location', 'By'], ['størrelsePåHest', 'Størrelse på hest'], ['erfaring', 'Erfaring'], ['ønsketype', 'Ønsketype'], ['aktivitetstype', 'Aktivitetstype'], ['ridestil', 'Ridestil'], ['status', 'Status'], ['qualifications', 'Kvalifikasjoner'], ['comment', 'Kommentar']],
     requests: [['horseId', 'Hest'], ['userId', 'Rytter'], ['date', 'Dato'], ['startTime', 'Tidspunkt'], ['durationHours', 'Varighet (timer)'], ['activityType', 'Type aktivitet'], ['status', 'Forespørsel status'], ['comment', 'Kommentar']],
     events: [['organizerId', 'Arrangør'], ['location', 'By'], ['date', 'Dato'], ['startTime', 'Tidspunkt'], ['qualifications', 'Kvalifikasjoner'], ['description', 'Beskrivelse'], ['participantIds', 'Deltakere']],
     activities: [['horseId', 'Hest'], ['userId', 'Rytter'], ['activityType', 'Type'], ['date', 'Dato'], ['startTime', 'Starttid'], ['duration', 'Varighet'], ['location', 'By'], ['status', 'Status'], ['notes', 'Notater']],
     qualifications: [['userId', 'Bruker'], ['horseId', 'Hest'], ['qualificationType', 'Type'], ['level', 'Nivå'], ['status', 'Status'], ['description', 'Beskrivelse'], ['validFrom', 'Gyldig fra'], ['validUntil', 'Gyldig til']],
     incidents: [['horseId', 'Hest'], ['date', 'Dato'], ['incidentType', 'Type'], ['severity', 'Alvorlighet'], ['description', 'Beskrivelse'], ['actionTaken', 'Tiltak'], ['status', 'Status']]
   };
-  const state = { search: '', selectedFilters: {} };
+  const state = { search: '', selectedFilters: {}, wishFlow: {} };
   const createLabels = { users: 'profil', horses: 'hest', wishes: 'ønske', requests: 'forespørsel', events: 'arrangement', activities: 'aktivitet', qualifications: 'kvalifikasjon', incidents: 'hendelse' };
   const createFields = {
     users: [
@@ -52,9 +52,13 @@
     wishes: [
       { key: 'name', label: 'Navn på ønsket', required: true }, { key: 'userId', label: 'Bruker', type: 'reference', source: 'users' },
       { key: 'horseId', label: 'Hest', type: 'reference', source: 'horses' }, { key: 'location', label: 'By', required: true },
-      { key: 'experience', label: 'Erfaring', type: 'select', required: true, options: ['Nybegynner', 'Øvet', 'Erfaren'] },
-      { key: 'qualifications', label: 'Kvalifikasjoner', array: true }, { key: 'ridingStyles', label: 'Ridestil', array: true, required: true, placeholder: 'Tur, Dressur, Sprang' },
-      { key: 'horseSize', label: 'Størrelse på hest' }, { key: 'comment', label: 'Kommentar', type: 'textarea', wide: true }
+      { key: 'størrelsePåHest', label: 'Størrelse på hest', type: 'select', required: true, options: ['Liten', 'Mellom', 'Stor'] },
+      { key: 'erfaring', label: 'Erfaring', type: 'select', required: true, options: ['Nybegynner', 'Lett øvet', 'Erfaren', 'Profesjonell'] },
+      { key: 'ønsketype', label: 'Ønsketype', type: 'select', required: true, options: ['Ønsker en rytter', 'Ønsker å Ri'] },
+      { key: 'aktivitetstype', label: 'Aktivitetstype', type: 'select', required: true, options: ['Engangstilfelle', 'Månedlig', 'Ukentlig', 'Daglig', 'Periode'] },
+      { key: 'ridestil', label: 'Ridestil', type: 'select', required: true, options: ['Tur', 'Dressur', 'Sprang', 'Fôr'] },
+      { key: 'status', label: 'Status', type: 'select', required: true, options: ['Aktiv', 'Matchet', 'Avsluttet', 'Pause'] },
+      { key: 'qualifications', label: 'Kvalifikasjoner', array: true }, { key: 'comment', label: 'Kommentar', type: 'textarea', wide: true }
     ],
     requests: [
       { key: 'horseId', label: 'Hest', type: 'reference', source: 'horses', required: true },
@@ -172,6 +176,17 @@
     return user;
   }
 
+  function hasActiveWishForUser(userId) {
+    if (!userId) return false;
+    return data.wishes.some((wish) => {
+      if (wish.status !== 'Aktiv') return false;
+      if (wish.userId === userId) return true;
+      if (!wish.horseId) return false;
+      const horse = getRecordById('horses', wish.horseId);
+      return horse && horse.ownerId === userId;
+    });
+  }
+
   function updateAuthAction() {
     const user = getCurrentUser();
     const action = document.querySelector('[data-auth-action]');
@@ -184,12 +199,17 @@
     const horses = data.horses.slice(0, 3);
     const nextActivity = data.activities.find((activity) => activity.status === 'Godkjent') || data.activities[0];
     const locationFilter = currentUser ? `/filter/location/${encodeURIComponent(currentUser.location)}` : '';
+    const showWishPrompt = Boolean(currentUser) && !hasActiveWishForUser(currentUser.id);
+    const wishPromptSection = showWishPrompt
+      ? `<section class="home-section wish-prompt-section"><div class="section-heading"><p class="eyebrow">Kom i gang</p><h2>Begynn reisen din med et ønske</h2><p class="lede">Legg inn et ønske, så andre hestevenner kan matche med deg for en trygg og god rideopplevelse.</p></div><a class="button" href="#create-wish"><span aria-hidden="true">✦</span> Opprett Ønske</a></section>`
+      : '';
     const relatedHorse = currentUser ? data.horses.find((horse) => horse.ownerId === currentUser.id) : null;
     const relatedHorseImage = relatedHorse ? getProfileImage(relatedHorse) : '';
     const heroVisual = relatedHorseImage ? `<div class="hero-mark hero-mark-image"><img src="${escapeHtml(relatedHorseImage)}" alt="${escapeHtml(relatedHorse.name)}"></div>` : '<div class="hero-mark" aria-hidden="true">♞<span>✦</span></div>';
     app.innerHTML = `<div class="home-page">
       <section class="home-hero"><div><p class="eyebrow">Velkommen til HesteVenn</p><h1>Gode dager med hest begynner med riktig match.</h1><p class="lede">Finn en trygg hestevenn, en passende rytter eller neste aktivitet i nærheten.</p></div>${heroVisual}</section>
-      <section class="home-section"><div class="section-heading"><p class="eyebrow">Kom i gang</p><h2>Hva passer best for deg?</h2></div><div class="choice-grid"><a class="choice-card choice-owner" href="#users${locationFilter}${currentUser ? '/audience/riders' : ''}"><span class="choice-icon" aria-hidden="true">♞</span><strong>Jeg har hest</strong><p>Finn en passende rytter${currentUser ? ` i ${escapeHtml(currentUser.location)}` : ''} og fortell hva hesten din trenger.</p><span class="choice-link">Finn en rytter →</span></a><a class="choice-card choice-rider" href="#horses${locationFilter}"><span class="choice-icon" aria-hidden="true">⌁</span><strong>Jeg ønsker å ri</strong><p>Oppdag hester${currentUser ? ` i ${escapeHtml(currentUser.location)}` : ''} som passer erfaringen og hverdagen din.</p><span class="choice-link">Utforsk hester →</span></a><a class="choice-card choice-event" href="#events${locationFilter}"><span class="choice-icon" aria-hidden="true">◎</span><strong>Utforsk arrangementer</strong><p>Finn arrangementer${currentUser ? ` i ${escapeHtml(currentUser.location)}` : ' i nærheten'} og møt andre hestevenner.</p><span class="choice-link">Se arrangementer →</span></a></div></section>
+      ${wishPromptSection}
+      <section class="home-section"><div class="section-heading"><h2>Hva passer best for deg?</h2></div><div class="choice-grid"><a class="choice-card choice-owner" href="#wishes/filter/ønsketype/%C3%98nsker%20%C3%A5%20Ri"><span class="choice-icon" aria-hidden="true">♞</span><strong>Jeg har hest</strong><p>Finn en rytter${currentUser ? ` i ${escapeHtml(currentUser.location)}` : ''} som passer din hest.</p><span class="choice-link">Finn en rytter →</span></a><a class="choice-card choice-rider" href="#wishes/filter/ønsketype/%C3%98nsker%20en%20rytter"><span class="choice-icon" aria-hidden="true">⌁</span><strong>Jeg ønsker å ri</strong><p>Finn en hest${currentUser ? ` i ${escapeHtml(currentUser.location)}` : ''} som passer din erfaring og rideønske.</p><span class="choice-link">Utforsk hester →</span></a><a class="choice-card choice-event" href="#events${locationFilter}"><span class="choice-icon" aria-hidden="true">◎</span><strong>Utforsk arrangementer</strong><p>Finn arrangementer${currentUser ? ` i ${escapeHtml(currentUser.location)}` : ' i nærheten'} og møt andre hestevenner.</p><span class="choice-link">Se arrangementer →</span></a></div></section>
       <section class="home-section nearby-section"><div class="section-heading heading-row"><div><p class="eyebrow">Noen hester i nærheten</p><h2>Møt din neste turkamerat</h2></div><a class="text-link" href="#horses">Se alle hester →</a></div><div class="home-horse-grid">${horses.map((horse) => `<article class="home-horse-card"><div class="home-horse-art" aria-hidden="true">♞</div><div class="home-horse-content"><div class="home-horse-title"><h3>${escapeHtml(horse.name)}</h3><span>${horse.age} år</span></div><p>${escapeHtml(horse.breed)} · ${escapeHtml(horse.location)}</p><dl><div><dt>Passer for</dt><dd>${escapeHtml(horse.suitableActivities.join(' og '))}</dd></div><div><dt>Ønsket erfaring</dt><dd>${escapeHtml(horse.experienceRequirement)}</dd></div></dl><a class="button button-outline" href="#horse/${horse.id}">Se profil</a></div></article>`).join('')}</div></section>
       <section class="home-section match-strip"><div><p class="eyebrow">Et mulig treff</p><h2>Fjellglimt og Nora kan bli et fint lag</h2><p>Når behov, erfaring og hverdag passer sammen, blir det lettere å bygge tillit over tid.</p></div><div class="match-visual"><span aria-hidden="true">♞</span><strong>92%</strong><span aria-hidden="true">N</span></div><a class="button" href="#horse/HORSE-001">Se Fjellglimt</a></section>
       <section class="home-section activity-preview"><div><p class="eyebrow">Et glimt av hverdagen</p><h2>Neste aktivitet</h2><p>${escapeHtml(nextActivity.name)}</p></div><div class="activity-preview-details"><div><span>Hest</span><a href="#horse/${nextActivity.horseId}">${escapeHtml(getHorseName(nextActivity.horseId))}</a></div><div><span>Rytter</span><a href="#user/${nextActivity.userId}">${escapeHtml(getUserName(nextActivity.userId))}</a></div><div><span>Når</span><strong>${escapeHtml(nextActivity.date)} · ${escapeHtml(nextActivity.startTime)}</strong></div><div><span>By</span><strong>${escapeHtml(nextActivity.location)}</strong></div></div><span class="badge">${escapeHtml(nextActivity.status)}</span></section>
@@ -221,7 +241,29 @@
     return escapeHtml(formatValue(key, value));
   }
   function uniqueValues(type, key) { return [...new Set(data[type].flatMap((record) => Array.isArray(record[key]) ? record[key] : formatValue(key, record[key])).filter(Boolean))].sort(); }
-  function matchesFilters(type, record) { return Object.entries(state.selectedFilters).every(([key, value]) => !value || (key === 'audience' && value === 'riders' ? ['Rytter', 'Begge'].includes(record.role) : Array.isArray(record[key]) ? record[key].includes(value) : formatValue(key, record[key]) === value)); }
+  function normalizeFilterValue(type, key, value) {
+    if (type !== 'wishes' || key !== 'ønsketype') return value;
+    const normalized = String(value || '').toLowerCase().replaceAll(' ', '');
+    const aliases = {
+      'ønskeråri': 'Ønsker å Ri',
+      'onskeråri': 'Ønsker å Ri',
+      'onskerari': 'Ønsker å Ri',
+      'ønskerenrytter': 'Ønsker en rytter',
+      'onskerenrytter': 'Ønsker en rytter'
+    };
+    if (aliases[normalized]) return aliases[normalized];
+    const canonical = uniqueValues('wishes', 'ønsketype').find((option) => String(option).toLowerCase().replaceAll(' ', '') === normalized);
+    return canonical || value;
+  }
+  function matchesFilters(type, record) {
+    return Object.entries(state.selectedFilters).every(([key, value]) => {
+      if (!value) return true;
+      const expectedValue = normalizeFilterValue(type, key, value);
+      if (key === 'audience' && expectedValue === 'riders') return ['Rytter', 'Begge'].includes(record.role);
+      if (Array.isArray(record[key])) return record[key].includes(expectedValue);
+      return formatValue(key, record[key]) === expectedValue;
+    });
+  }
   function renderObjectList(type) {
     const query = state.search.toLowerCase().trim();
     const records = data[type].filter((record) => matchesFilters(type, record) && (!query || Object.values(record).join(' ').toLowerCase().includes(query)));
@@ -229,7 +271,7 @@
     const tableHead = columns[type].map(([, label]) => `<th scope="col">${label}</th>`).join('');
     const rows = records.map((record) => `<tr>${columns[type].map(([key]) => `<td>${renderCell(type, key, record[key], record)}</td>`).join('')}</tr>`).join('');
     const createAction = `<a class="button" href="#new-${singular[type]}">+ Legg Til</a>`;
-    app.innerHTML = `<section class="page-heading"><div><p class="eyebrow">Objekt · ${labels[type]}</p><h1>${labels[type]}</h1><p class="lede">${descriptions[type]}</p></div><div class="page-actions">${createAction}<button class="button export-button" type="button" data-export="${type}">⇩ Eksporter CSV</button></div></section><section class="list-panel"><div class="list-toolbar"><div><strong>${records.length} av ${data[type].length} poster</strong><span class="toolbar-note"> · lokale data</span></div><label class="search-field"><span class="sr-only">Søk i ${labels[type]}</span><span aria-hidden="true">⌕</span><input type="search" id="record-search" placeholder="Søk i poster" value="${escapeHtml(state.search)}"></label><div class="filters">${filterMarkup}</div></div><div class="table-wrap"><table><thead><tr>${tableHead}</tr></thead><tbody>${rows}</tbody></table></div>${records.length ? '' : '<div class="empty-state"><span aria-hidden="true">⌕</span><h2>Ingen poster funnet</h2><p>Prøv et annet søk eller fjern et filter.</p></div>'}</section>`;
+    app.innerHTML = `<section class="page-heading"><div><p class="eyebrow">Objekt · ${labels[type]}</p><h1>${labels[type]}</h1><p class="lede">${descriptions[type]}</p></div><div class="page-actions">${createAction}</div></section><section class="list-panel"><div class="list-toolbar"><div><strong>${records.length} av ${data[type].length} poster</strong><span class="toolbar-note"> · lokale data</span></div><label class="search-field"><span class="sr-only">Søk i ${labels[type]}</span><span aria-hidden="true">⌕</span><input type="search" id="record-search" placeholder="Søk i poster" value="${escapeHtml(state.search)}"></label><div class="filters">${filterMarkup}</div></div><div class="table-wrap"><table><thead><tr>${tableHead}</tr></thead><tbody>${rows}</tbody></table></div>${records.length ? '' : '<div class="empty-state"><span aria-hidden="true">⌕</span><h2>Ingen poster funnet</h2><p>Prøv et annet søk eller fjern et filter.</p></div>'}</section>`;
     bindListEvents(type);
   }
   function renderLogin() {
@@ -242,6 +284,91 @@
       window.location.hash = '#home';
     });
     updateNavigation('', true);
+  }
+  function createWishFlowDefaults() {
+    const currentUser = getCurrentUser();
+    return {
+      ønsketype: '',
+      location: currentUser?.location || '',
+      erfaring: 'Nybegynner',
+      aktivitetstype: 'Ukentlig',
+      størrelsePåHest: 'Mellom',
+      ridestil: 'Tur',
+      qualifications: '',
+      comment: '',
+      horseId: '',
+      status: 'Aktiv'
+    };
+  }
+  function getWishFlowState() {
+    if (!Object.keys(state.wishFlow).length) state.wishFlow = createWishFlowDefaults();
+    return state.wishFlow;
+  }
+  function renderCreateWishFlowStep1() {
+    state.wishFlow = createWishFlowDefaults();
+    app.innerHTML = `<a class="back-link" href="#home">← Til Min Side</a><section class="page-heading"><div><p class="eyebrow">Opprett Ønske · 1 av 3</p><h1>Velg ønsketype</h1><p class="lede">Start med å fortelle om du ønsker å ri eller ønsker en rytter.</p></div></section><form class="profile-form detail-panel" id="wish-flow-step-1"><div class="form-grid"><label class="form-wide"><span>Ønsketype</span><select name="ønsketype" required><option value="">Velg ønsketype</option><option value="Ønsker å Ri">Ønsker å Ri</option><option value="Ønsker en rytter">Ønsker en rytter</option></select></label></div><div class="form-actions"><a class="button button-secondary" href="#home">Avbryt</a><button class="button" type="submit">Neste</button></div></form>`;
+    document.querySelector('#wish-flow-step-1').addEventListener('submit', (event) => {
+      event.preventDefault();
+      const values = Object.fromEntries(new FormData(event.currentTarget));
+      state.wishFlow = { ...createWishFlowDefaults(), ...values };
+      window.location.hash = '#create-wish/detaljer';
+    });
+    updateNavigation('');
+  }
+  function renderCreateWishFlowStep2() {
+    const flow = getWishFlowState();
+    if (!flow.ønsketype) {
+      window.location.hash = '#create-wish';
+      return;
+    }
+    const needsHorse = flow.ønsketype === 'Ønsker en rytter';
+    const horseField = needsHorse
+      ? `<label><span>Hest</span><select name="horseId" required><option value="">Velg hest</option>${data.horses.map((horse) => `<option value="${escapeHtml(horse.id)}" ${flow.horseId === horse.id ? 'selected' : ''}>${escapeHtml(horse.name)} · ${escapeHtml(horse.location)}</option>`).join('')}</select></label>`
+      : '';
+    app.innerHTML = `<a class="back-link" href="#create-wish">← Tilbake</a><section class="page-heading"><div><p class="eyebrow">Opprett Ønske · 2 av 3</p><h1>${escapeHtml(flow.ønsketype)}</h1><p class="lede">Svar på spørsmålene under for å opprette ønsket ditt.</p></div></section><form class="profile-form detail-panel" id="wish-flow-step-2"><div class="form-grid"><label><span>By</span><input name="location" required value="${escapeHtml(flow.location)}"></label><label><span>Erfaring</span><select name="erfaring" required><option value="Nybegynner" ${flow.erfaring === 'Nybegynner' ? 'selected' : ''}>Nybegynner</option><option value="Lett øvet" ${flow.erfaring === 'Lett øvet' ? 'selected' : ''}>Lett øvet</option><option value="Erfaren" ${flow.erfaring === 'Erfaren' ? 'selected' : ''}>Erfaren</option><option value="Profesjonell" ${flow.erfaring === 'Profesjonell' ? 'selected' : ''}>Profesjonell</option></select></label><label><span>Aktivitetstype</span><select name="aktivitetstype" required><option value="Engangstilfelle" ${flow.aktivitetstype === 'Engangstilfelle' ? 'selected' : ''}>Engangstilfelle</option><option value="Månedlig" ${flow.aktivitetstype === 'Månedlig' ? 'selected' : ''}>Månedlig</option><option value="Ukentlig" ${flow.aktivitetstype === 'Ukentlig' ? 'selected' : ''}>Ukentlig</option><option value="Daglig" ${flow.aktivitetstype === 'Daglig' ? 'selected' : ''}>Daglig</option><option value="Periode" ${flow.aktivitetstype === 'Periode' ? 'selected' : ''}>Periode</option></select></label><label><span>Størrelse på hest</span><select name="størrelsePåHest" required><option value="Liten" ${flow.størrelsePåHest === 'Liten' ? 'selected' : ''}>Liten</option><option value="Mellom" ${flow.størrelsePåHest === 'Mellom' ? 'selected' : ''}>Mellom</option><option value="Stor" ${flow.størrelsePåHest === 'Stor' ? 'selected' : ''}>Stor</option></select></label><label><span>Ridestil</span><select name="ridestil" required><option value="Tur" ${flow.ridestil === 'Tur' ? 'selected' : ''}>Tur</option><option value="Dressur" ${flow.ridestil === 'Dressur' ? 'selected' : ''}>Dressur</option><option value="Sprang" ${flow.ridestil === 'Sprang' ? 'selected' : ''}>Sprang</option><option value="Fôr" ${flow.ridestil === 'Fôr' ? 'selected' : ''}>Fôr</option></select></label>${horseField}<label class="form-wide"><span>Kvalifikasjoner</span><input name="qualifications" value="${escapeHtml(flow.qualifications)}" placeholder="For eksempel Trygg på tur, Grunnleggende håndtering"></label><label class="form-wide"><span>Kommentar</span><textarea name="comment" rows="5">${escapeHtml(flow.comment)}</textarea></label></div><div class="form-actions"><a class="button button-secondary" href="#create-wish">Tilbake</a><button class="button" type="submit">Opprett ønske</button></div><p class="form-error" role="alert" hidden></p></form>`;
+    document.querySelector('#wish-flow-step-2').addEventListener('submit', (event) => {
+      event.preventDefault();
+      const form = event.currentTarget;
+      const values = Object.fromEntries(new FormData(form));
+      const currentUser = getCurrentUser();
+      const wishType = flow.ønsketype;
+      const horseId = wishType === 'Ønsker en rytter' ? (values.horseId || '').trim() : '';
+      const userId = wishType === 'Ønsker å Ri' ? (currentUser?.id || '') : '';
+      const message = form.querySelector('.form-error');
+      if (wishType === 'Ønsker en rytter' && !horseId) {
+        message.textContent = 'Velg hest for ønsket ditt.';
+        message.hidden = false;
+        return;
+      }
+      const now = new Date();
+      const dateToken = now.toLocaleDateString('nb-NO');
+      const wishNamePrefix = wishType === 'Ønsker en rytter' ? 'Ønsker en rytter' : 'Ønsker å Ri';
+      const record = {
+        id: `${idPrefixes.wishes}-LOCAL-${Date.now()}`,
+        name: `${wishNamePrefix} · ${values.location.trim()} · ${dateToken}`,
+        userId,
+        horseId,
+        location: values.location.trim(),
+        størrelsePåHest: values.størrelsePåHest,
+        erfaring: values.erfaring,
+        ønsketype: wishType,
+        aktivitetstype: values.aktivitetstype,
+        ridestil: values.ridestil,
+        status: 'Aktiv',
+        qualifications: String(values.qualifications || '').split(',').map((value) => value.trim()).filter(Boolean),
+        comment: String(values.comment || '').trim()
+      };
+      saveLocalRecord('wishes', record);
+      state.wishFlow = createWishFlowDefaults();
+      window.location.hash = `#create-wish/fullfort/${encodeURIComponent(record.id)}`;
+    });
+    updateNavigation('');
+  }
+  function renderCreateWishFlowStep3(wishId) {
+    const record = getRecordById('wishes', wishId);
+    const wishLink = record ? `#wish/${encodeURIComponent(record.id)}` : '#wishes';
+    app.innerHTML = `<a class="back-link" href="#home">← Til Min Side</a><section class="page-heading"><div><p class="eyebrow">Opprett Ønske · 3 av 3</p><h1>Ønsket ditt er opprettet</h1><p class="lede">Flott! Nå kan andre hestevenner finne ønsket ditt og ta kontakt for en trygg og god rideopplevelse.</p></div></section><section class="detail-panel"><div class="empty-state compact"><span aria-hidden="true">✦</span><h3>Klar for matching</h3><p>Du kan se ønsket ditt med en gang eller gå tilbake til oversikten over alle ønsker.</p></div><div class="form-actions"><a class="button button-secondary" href="#wishes">Se alle ønsker</a><a class="button" href="${wishLink}">Se ønsket ditt</a></div></section>`;
+    updateNavigation('');
   }
   function relationPresets(type, contextType, contextId) {
     if (!contextType || !contextId) {
@@ -372,7 +499,6 @@
       search.setSelectionRange(caret, caret);
     });
     document.querySelectorAll('[data-filter-key]').forEach((select) => select.addEventListener('change', (event) => { state.selectedFilters[event.target.dataset.filterKey] = event.target.value; renderObjectList(type); }));
-    document.querySelector('[data-export]').addEventListener('click', () => exportObjectToCsv(type));
   }
   function csvValue(value) { return `"${String(Array.isArray(value) ? value.join('; ') : value ?? '').replaceAll('"', '""').replace(/\r?\n/g, ' ')}"`; }
   function exportObjectToCsv(type) {
@@ -385,9 +511,73 @@
     link.click();
     URL.revokeObjectURL(link.href);
   }
-  function navigateToRecord(type, id, tab, routeParts = []) { if (id) renderDetail(type, id, tab); else { state.search = ''; state.selectedFilters = {}; if (routeParts[0] === 'filter') { for (let index = 1; index < routeParts.length; index += 2) state.selectedFilters[routeParts[index]] = decodeURIComponent(routeParts[index + 1] || ''); } renderObjectList(type); } updateNavigation(type); }
+  function navigateToRecord(type, id, tab, routeParts = []) {
+    if (id) renderDetail(type, id, tab);
+    else {
+      state.search = '';
+      state.selectedFilters = {};
+      if (routeParts[0] === 'filter') {
+        for (let index = 1; index < routeParts.length; index += 2) {
+          const key = decodeURIComponent(routeParts[index] || '');
+          const value = decodeURIComponent(routeParts[index + 1] || '');
+          state.selectedFilters[key] = normalizeFilterValue(type, key, value);
+        }
+      }
+      renderObjectList(type);
+    }
+    updateNavigation(type);
+  }
   function updateNavigation(type, isHome) { document.querySelectorAll('[data-object]').forEach((link) => link.classList.toggle('is-active', !isHome && link.dataset.object === type)); document.querySelector('[data-home]').classList.toggle('is-active', isHome); }
-  function renderRoute() { const parts = window.location.hash.slice(1).split('/').filter(Boolean); updateAuthAction(); if (!parts.length || parts[0] === 'home') { renderHome(); updateNavigation('', true); return; } if (parts[0] === 'login') { renderLogin(); return; } if (parts[0] === 'logout') { localStorage.removeItem(currentUserKey); updateAuthAction(); window.location.hash = '#home'; return; } if (parts[0].startsWith('new-')) { const createType = Object.keys(singular).find((key) => singular[key] === parts[0].slice(4)); const contextType = Object.keys(singular).find((key) => singular[key] === parts[1]); if (createType) { renderCreateForm(createType, contextType, parts[2] ? decodeURIComponent(parts[2]) : null, parts[3]); return; } } const type = labels[parts[0]] ? parts[0] : Object.keys(singular).find((key) => singular[key] === parts[0]); if (type && data[type]) { const isFilterRoute = parts[1] === 'filter'; navigateToRecord(type, isFilterRoute ? null : (parts[1] ? decodeURIComponent(parts[1]) : null), isFilterRoute ? null : parts[2], isFilterRoute ? parts.slice(1) : []); } else { window.location.hash = '#home'; } }
+  function renderRoute() {
+    const parts = window.location.hash.slice(1).split('/').filter(Boolean);
+    updateAuthAction();
+    if (!parts.length || parts[0] === 'home') {
+      renderHome();
+      updateNavigation('', true);
+      return;
+    }
+    if (parts[0] === 'login') {
+      renderLogin();
+      return;
+    }
+    if (parts[0] === 'logout') {
+      localStorage.removeItem(currentUserKey);
+      updateAuthAction();
+      window.location.hash = '#home';
+      return;
+    }
+    if (parts[0] === 'create-wish') {
+      if (!parts[1]) {
+        renderCreateWishFlowStep1();
+        return;
+      }
+      if (parts[1] === 'detaljer') {
+        renderCreateWishFlowStep2();
+        return;
+      }
+      if (parts[1] === 'fullfort') {
+        renderCreateWishFlowStep3(parts[2] ? decodeURIComponent(parts[2]) : '');
+        return;
+      }
+      window.location.hash = '#create-wish';
+      return;
+    }
+    if (parts[0].startsWith('new-')) {
+      const createType = Object.keys(singular).find((key) => singular[key] === parts[0].slice(4));
+      const contextType = Object.keys(singular).find((key) => singular[key] === parts[1]);
+      if (createType) {
+        renderCreateForm(createType, contextType, parts[2] ? decodeURIComponent(parts[2]) : null, parts[3]);
+        return;
+      }
+    }
+    const type = labels[parts[0]] ? parts[0] : Object.keys(singular).find((key) => singular[key] === parts[0]);
+    if (type && data[type]) {
+      const isFilterRoute = parts[1] === 'filter';
+      navigateToRecord(type, isFilterRoute ? null : (parts[1] ? decodeURIComponent(parts[1]) : null), isFilterRoute ? null : parts[2], isFilterRoute ? parts.slice(1) : []);
+    } else {
+      window.location.hash = '#home';
+    }
+  }
   const menuToggle = document.querySelector('.menu-toggle');
   const navigationLinks = document.querySelector('.nav-links');
   function closeMenu() { navigationLinks.classList.remove('is-open'); menuToggle.setAttribute('aria-expanded', 'false'); }
