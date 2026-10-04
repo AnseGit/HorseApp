@@ -5,6 +5,7 @@
   const currentUserKey = 'hestevenn-current-user-id';
   const profileImagesKey = 'hestevenn-profile-images';
   const eventAttendanceKey = 'hestevenn-event-attendance';
+  const notificationKey = 'hestevenn-notifications';
   const idPrefixes = { users: 'USER', horses: 'HORSE', wishes: 'WISH', requests: 'REQUEST', events: 'EVENT', activities: 'ACTIVITY', qualifications: 'QUALIFICATION', incidents: 'INCIDENT' };
   const labels = { users: 'Ryttere', horses: 'Hester', wishes: 'Ønsker', requests: 'Forespørsler', events: 'Arrangementer', activities: 'Aktiviteter', qualifications: 'Kvalifikasjoner', incidents: 'Hendelser' };
   const singular = { users: 'user', horses: 'horse', wishes: 'wish', requests: 'request', events: 'event', activities: 'activity', qualifications: 'qualification', incidents: 'incident' };
@@ -13,7 +14,7 @@
     users: [['name', 'Navn'], ['role', 'Rolle'], ['location', 'By'], ['experienceLevel', 'Erfaringsnivå'], ['active', 'Aktiv']],
     horses: [['name', 'Navn'], ['ownerId', 'Eier'], ['age', 'Alder'], ['breed', 'Rase'], ['location', 'By'], ['experienceRequirement', 'Krever erfaring'], ['active', 'Aktiv']],
     wishes: [['name', 'Ønske'], ['userId', 'Bruker'], ['horseId', 'Hest'], ['location', 'By'], ['ønsketype', 'Ønsketype'], ['aktivitetstype', 'Aktivitetstype'], ['status', 'Status']],
-    requests: [['name', 'Forespørsel'], ['horseId', 'Hest'], ['userId', 'Rytter'], ['date', 'Dato'], ['startTime', 'Tid'], ['durationHours', 'Varighet'], ['activityType', 'Aktivitet'], ['status', 'Status']],
+    requests: [['name', 'Forespørsel'], ['wishId', 'Ønske'], ['sender', 'Sender'], ['mottaker', 'Mottaker'], ['horseId', 'Hest'], ['date', 'Dato'], ['startTime', 'Tid'], ['durationHours', 'Varighet'], ['activityType', 'Aktivitet'], ['status', 'Status']],
     events: [['name', 'Navn'], ['location', 'By'], ['date', 'Dato'], ['startTime', 'Tidspunkt'], ['qualifications', 'Kvalifikasjoner']],
     activities: [['name', 'Aktivitet'], ['horseId', 'Hest'], ['userId', 'Rytter'], ['date', 'Dato'], ['activityType', 'Type'], ['status', 'Status']],
     qualifications: [['name', 'Kvalifikasjon'], ['userId', 'Bruker'], ['horseId', 'Hest'], ['qualificationType', 'Type'], ['level', 'Nivå'], ['status', 'Status']],
@@ -24,7 +25,7 @@
     users: [['role', 'Rolle'], ['location', 'By'], ['experienceLevel', 'Erfaringsnivå'], ['yearsOfExperience', 'År med erfaring'], ['email', 'E-post'], ['phone', 'Telefon'], ['biography', 'Biografi'], ['active', 'Aktiv']],
     horses: [['ownerId', 'Eier'], ['age', 'Alder'], ['breed', 'Rase'], ['gender', 'Kjønn'], ['height', 'Mankehøyde'], ['location', 'By'], ['experienceRequirement', 'Krever erfaring'], ['temperament', 'Temperament'], ['suitableActivities', 'Passer til'], ['description', 'Beskrivelse'], ['active', 'Aktiv']],
     wishes: [['userId', 'Bruker'], ['horseId', 'Hest'], ['location', 'By'], ['størrelsePåHest', 'Størrelse på hest'], ['erfaring', 'Erfaring'], ['ønsketype', 'Ønsketype'], ['aktivitetstype', 'Aktivitetstype'], ['ridestil', 'Ridestil'], ['status', 'Status'], ['qualifications', 'Kvalifikasjoner'], ['comment', 'Kommentar']],
-    requests: [['horseId', 'Hest'], ['userId', 'Rytter'], ['date', 'Dato'], ['startTime', 'Tidspunkt'], ['durationHours', 'Varighet (timer)'], ['activityType', 'Type aktivitet'], ['status', 'Forespørsel status'], ['comment', 'Kommentar']],
+    requests: [['wishId', 'Ønske'], ['sender', 'Sender'], ['mottaker', 'Mottaker'], ['horseId', 'Hest'], ['date', 'Dato'], ['startTime', 'Tidspunkt'], ['durationHours', 'Varighet (timer)'], ['activityType', 'Type aktivitet'], ['status', 'Forespørsel status'], ['comment', 'Kommentar']],
     events: [['organizerId', 'Arrangør'], ['location', 'By'], ['date', 'Dato'], ['startTime', 'Tidspunkt'], ['qualifications', 'Kvalifikasjoner'], ['description', 'Beskrivelse'], ['participantIds', 'Deltakere']],
     activities: [['horseId', 'Hest'], ['userId', 'Rytter'], ['activityType', 'Type'], ['date', 'Dato'], ['startTime', 'Starttid'], ['duration', 'Varighet'], ['location', 'By'], ['status', 'Status'], ['notes', 'Notater']],
     qualifications: [['userId', 'Bruker'], ['horseId', 'Hest'], ['qualificationType', 'Type'], ['level', 'Nivå'], ['status', 'Status'], ['description', 'Beskrivelse'], ['validFrom', 'Gyldig fra'], ['validUntil', 'Gyldig til']],
@@ -61,8 +62,10 @@
       { key: 'qualifications', label: 'Kvalifikasjoner', array: true }, { key: 'comment', label: 'Kommentar', type: 'textarea', wide: true }
     ],
     requests: [
+      { key: 'wishId', label: 'Ønske', type: 'reference', source: 'wishes', required: true },
+      { key: 'sender', label: 'Sender', type: 'reference', source: 'users', required: true },
+      { key: 'mottaker', label: 'Mottaker', type: 'reference', source: 'users', required: true },
       { key: 'horseId', label: 'Hest', type: 'reference', source: 'horses', required: true },
-      { key: 'userId', label: 'Rytter', type: 'reference', source: 'users', required: true },
       { key: 'date', label: 'Dato', type: 'date', required: true }, { key: 'startTime', label: 'Tidspunkt', type: 'time', required: true },
       { key: 'durationHours', label: 'Varighet (timer)', type: 'number', min: 0.5, max: 12, step: 0.5, value: 1, required: true },
       { key: 'activityType', label: 'Type aktivitet', type: 'select', required: true, options: ['Sprang', 'Dressur', 'Tur', 'Fôr'] },
@@ -187,18 +190,118 @@
     });
   }
 
+  function isWishOwnedByUser(wish, userId) {
+    if (!wish || !userId) return false;
+    if (wish.userId === userId) return true;
+    if (!wish.horseId) return false;
+    const horse = getRecordById('horses', wish.horseId);
+    return horse && horse.ownerId === userId;
+  }
+
+  function wishesOwnedByUser(userId) {
+    return data.wishes.filter((wish) => isWishOwnedByUser(wish, userId));
+  }
+
+  function getNotifications() {
+    try { return JSON.parse(localStorage.getItem(notificationKey) || '{}'); }
+    catch (error) { return {}; }
+  }
+
+  function saveNotifications(notifications) {
+    localStorage.setItem(notificationKey, JSON.stringify(notifications));
+  }
+
+  function getUserNotifications(userId) {
+    return getNotifications()[userId] || [];
+  }
+
+  function addNotification(userId, message, link = '#requests') {
+    if (!userId) return;
+    const notifications = getNotifications();
+    const userNotifications = notifications[userId] || [];
+    userNotifications.unshift({ id: `NOTIFICATION-${Date.now()}`, message, link, read: false, createdAt: new Date().toISOString() });
+    notifications[userId] = userNotifications.slice(0, 50);
+    saveNotifications(notifications);
+  }
+
+  function markNotificationsRead(userId) {
+    if (!userId) return;
+    const notifications = getNotifications();
+    notifications[userId] = (notifications[userId] || []).map((notification) => ({ ...notification, read: true }));
+    saveNotifications(notifications);
+  }
+
+  function unreadNotificationCount(userId) {
+    return getUserNotifications(userId).filter((notification) => !notification.read).length;
+  }
+
+  function syncLocalType(type) {
+    const prefix = `${idPrefixes[type]}-LOCAL-`;
+    const localRecords = data[type].filter((item) => item.id.startsWith(prefix));
+    localStorage.setItem(localStorageKeys[type], JSON.stringify(localRecords));
+  }
+
+  function updateRequestStatus(requestId, status) {
+    const request = getRecordById('requests', requestId);
+    if (!request) return;
+    request.status = status;
+    syncLocalType('requests');
+  }
+
+  function renderHomeInsights(currentUser) {
+    if (!currentUser) return '';
+    const ownWishes = wishesOwnedByUser(currentUser.id);
+    const ownActiveWishes = ownWishes.filter((wish) => wish.status === 'Aktiv');
+    const ownWishIds = new Set(ownWishes.map((wish) => wish.id));
+    const oppositeByType = { 'Ønsker en rytter': 'Ønsker å Ri', 'Ønsker å Ri': 'Ønsker en rytter' };
+    const matchingWishes = data.wishes.filter((wish) => {
+      if (wish.status !== 'Aktiv' || ownWishIds.has(wish.id)) return false;
+      return ownActiveWishes.some((mine) => oppositeByType[mine.ønsketype] === wish.ønsketype && mine.location === wish.location && mine.erfaring === wish.erfaring);
+    });
+    const incomingRequests = data.requests.filter((request) => request.sender === currentUser.id || request.mottaker === currentUser.id);
+    const localEvents = data.events.filter((event) => event.location === currentUser.location);
+    const ownWishesBody = ownWishes.length
+      ? `<div class="table-wrap"><table><thead><tr><th scope="col">Ønske</th><th scope="col">Type</th><th scope="col">By</th><th scope="col">Status</th></tr></thead><tbody>${ownWishes.map((wish) => `<tr><td>${lookupLink(wish.id, 'wishes')}</td><td>${escapeHtml(wish.ønsketype)}</td><td>${escapeHtml(wish.location)}</td><td><span class="badge badge-${String(wish.status).toLowerCase().replaceAll(' ', '-')}">${escapeHtml(wish.status)}</span></td></tr>`).join('')}</tbody></table></div>`
+      : '<div class="empty-state compact"><h3>Du har ingen ønsker registrert ennå.</h3></div>';
+    const matchingWishBody = matchingWishes.length
+      ? `<div class="table-wrap"><table><thead><tr><th scope="col">Ønske</th><th scope="col">Type</th><th scope="col">By</th><th scope="col">Erfaring</th></tr></thead><tbody>${matchingWishes.map((wish) => `<tr><td>${lookupLink(wish.id, 'wishes')}</td><td>${escapeHtml(wish.ønsketype)}</td><td>${escapeHtml(wish.location)}</td><td>${escapeHtml(wish.erfaring)}</td></tr>`).join('')}</tbody></table></div>`
+      : '<div class="empty-state compact"><h3>Ingen matchende ønsker tilgjengelig for øyeblikket.</h3></div>';
+    const incomingRequestsBody = incomingRequests.length
+      ? `<div class="table-wrap"><table><thead><tr><th scope="col">Forespørsel</th><th scope="col">Ønske</th><th scope="col">Rolle</th><th scope="col">Status</th><th scope="col">Handling</th></tr></thead><tbody>${incomingRequests.map((request) => { const isReceiver = request.mottaker === currentUser.id; const canRespond = isReceiver && request.status === 'Under behandling'; return `<tr><td>${lookupLink(request.id, 'requests')}</td><td>${request.wishId ? lookupLink(request.wishId, 'wishes') : '—'}</td><td>${isReceiver ? 'Mottaker' : 'Sender'}</td><td><span class="badge badge-${String(request.status).toLowerCase().replaceAll(' ', '-')}">${escapeHtml(request.status)}</span></td><td>${canRespond ? `<div class="inline-actions"><button class="button" type="button" data-approve-request="${escapeHtml(request.id)}">Godkjenn</button><button class="button button-secondary" type="button" data-reject-request="${escapeHtml(request.id)}">Avslå</button></div>` : '—'}</td></tr>`; }).join('')}</tbody></table></div>`
+      : '<div class="empty-state compact"><h3>Ingen forespørsler tilgjengelig for øyeblikket.</h3></div>';
+    const eventsBody = localEvents.length
+      ? `<div class="table-wrap"><table><thead><tr><th scope="col">Arrangement</th><th scope="col">Dato</th><th scope="col">Tid</th><th scope="col">By</th></tr></thead><tbody>${localEvents.map((event) => `<tr><td>${lookupLink(event.id, 'events')}</td><td>${escapeHtml(formatValue('date', event.date))}</td><td>${escapeHtml(event.startTime)}</td><td>${escapeHtml(event.location)}</td></tr>`).join('')}</tbody></table></div>`
+      : '<div class="empty-state compact"><h3>Ingen arrangementer i din by akkurat nå.</h3></div>';
+    return `<section class="home-section home-insights-section"><div class="section-heading"><h2>For deg i ${escapeHtml(currentUser.location)}</h2><p class="lede">Se relevante ønsker, forespørsler og arrangementer i nærheten.</p></div><article class="home-insight-card home-insight-card-full"><h3>Matchende ønsker</h3>${matchingWishBody}</article><article class="home-insight-card home-insight-card-full"><h3>Mine forespørsler</h3>${incomingRequestsBody}</article><div class="home-insights-grid home-insights-grid-bottom"><article class="home-insight-card"><h3>Arrangementer i samme by</h3>${eventsBody}</article><article class="home-insight-card"><h3>Mine ønsker</h3>${ownWishesBody}</article></div></section>`;
+  }
+
   function updateAuthAction() {
     const user = getCurrentUser();
     const action = document.querySelector('[data-auth-action]');
+    const notificationAction = document.querySelector('[data-notification-action]');
+    const notificationCount = document.querySelector('[data-notification-count]');
     action.textContent = user ? `Logg ut (${user.name})` : 'Logg inn';
     action.href = user ? '#logout' : '#login';
+    if (notificationAction && notificationCount) {
+      if (!user) {
+        notificationAction.hidden = true;
+        notificationCount.hidden = true;
+      } else {
+        const unread = unreadNotificationCount(user.id);
+        notificationAction.hidden = false;
+        notificationCount.hidden = unread === 0;
+        notificationCount.textContent = unread;
+      }
+    }
   }
 
   function renderHome() {
     const currentUser = getCurrentUser();
-    const horses = data.horses.slice(0, 3);
+    const horsePool = currentUser ? data.horses.filter((horse) => horse.location === currentUser.location) : data.horses;
+    const horses = [...(horsePool.length ? horsePool : data.horses)].sort(() => Math.random() - .5).slice(0, 3);
     const nextActivity = data.activities.find((activity) => activity.status === 'Godkjent') || data.activities[0];
     const locationFilter = currentUser ? `/filter/location/${encodeURIComponent(currentUser.location)}` : '';
+    const homeInsightsSection = renderHomeInsights(currentUser);
     const showWishPrompt = Boolean(currentUser) && !hasActiveWishForUser(currentUser.id);
     const wishPromptSection = showWishPrompt
       ? `<section class="home-section wish-prompt-section"><div class="section-heading"><p class="eyebrow">Kom i gang</p><h2>Begynn reisen din med et ønske</h2><p class="lede">Legg inn et ønske, så andre hestevenner kan matche med deg for en trygg og god rideopplevelse.</p></div><a class="button" href="#create-wish"><span aria-hidden="true">✦</span> Opprett Ønske</a></section>`
@@ -209,12 +312,28 @@
     app.innerHTML = `<div class="home-page">
       <section class="home-hero"><div><p class="eyebrow">Velkommen til HesteVenn</p><h1>Gode dager med hest begynner med riktig match.</h1><p class="lede">Finn en trygg hestevenn, en passende rytter eller neste aktivitet i nærheten.</p></div>${heroVisual}</section>
       ${wishPromptSection}
+      ${homeInsightsSection}
       <section class="home-section"><div class="section-heading"><h2>Hva passer best for deg?</h2></div><div class="choice-grid"><a class="choice-card choice-owner" href="#wishes/filter/ønsketype/%C3%98nsker%20%C3%A5%20Ri"><span class="choice-icon" aria-hidden="true">♞</span><strong>Jeg har hest</strong><p>Finn en rytter${currentUser ? ` i ${escapeHtml(currentUser.location)}` : ''} som passer din hest.</p><span class="choice-link">Finn en rytter →</span></a><a class="choice-card choice-rider" href="#wishes/filter/ønsketype/%C3%98nsker%20en%20rytter"><span class="choice-icon" aria-hidden="true">⌁</span><strong>Jeg ønsker å ri</strong><p>Finn en hest${currentUser ? ` i ${escapeHtml(currentUser.location)}` : ''} som passer din erfaring og rideønske.</p><span class="choice-link">Utforsk hester →</span></a><a class="choice-card choice-event" href="#events${locationFilter}"><span class="choice-icon" aria-hidden="true">◎</span><strong>Utforsk arrangementer</strong><p>Finn arrangementer${currentUser ? ` i ${escapeHtml(currentUser.location)}` : ' i nærheten'} og møt andre hestevenner.</p><span class="choice-link">Se arrangementer →</span></a></div></section>
       <section class="home-section nearby-section"><div class="section-heading heading-row"><div><p class="eyebrow">Noen hester i nærheten</p><h2>Møt din neste turkamerat</h2></div><a class="text-link" href="#horses">Se alle hester →</a></div><div class="home-horse-grid">${horses.map((horse) => `<article class="home-horse-card"><div class="home-horse-art" aria-hidden="true">♞</div><div class="home-horse-content"><div class="home-horse-title"><h3>${escapeHtml(horse.name)}</h3><span>${horse.age} år</span></div><p>${escapeHtml(horse.breed)} · ${escapeHtml(horse.location)}</p><dl><div><dt>Passer for</dt><dd>${escapeHtml(horse.suitableActivities.join(' og '))}</dd></div><div><dt>Ønsket erfaring</dt><dd>${escapeHtml(horse.experienceRequirement)}</dd></div></dl><a class="button button-outline" href="#horse/${horse.id}">Se profil</a></div></article>`).join('')}</div></section>
-      <section class="home-section match-strip"><div><p class="eyebrow">Et mulig treff</p><h2>Fjellglimt og Nora kan bli et fint lag</h2><p>Når behov, erfaring og hverdag passer sammen, blir det lettere å bygge tillit over tid.</p></div><div class="match-visual"><span aria-hidden="true">♞</span><strong>92%</strong><span aria-hidden="true">N</span></div><a class="button" href="#horse/HORSE-001">Se Fjellglimt</a></section>
       <section class="home-section activity-preview"><div><p class="eyebrow">Et glimt av hverdagen</p><h2>Neste aktivitet</h2><p>${escapeHtml(nextActivity.name)}</p></div><div class="activity-preview-details"><div><span>Hest</span><a href="#horse/${nextActivity.horseId}">${escapeHtml(getHorseName(nextActivity.horseId))}</a></div><div><span>Rytter</span><a href="#user/${nextActivity.userId}">${escapeHtml(getUserName(nextActivity.userId))}</a></div><div><span>Når</span><strong>${escapeHtml(nextActivity.date)} · ${escapeHtml(nextActivity.startTime)}</strong></div><div><span>By</span><strong>${escapeHtml(nextActivity.location)}</strong></div></div><span class="badge">${escapeHtml(nextActivity.status)}</span></section>
       <section class="home-section how-section"><div class="section-heading centered"><p class="eyebrow">Enkelt å utforske</p><h2>Slik fungerer HesteVenn</h2></div><div class="steps"><article><span class="step-number">01</span><span class="step-icon" aria-hidden="true">◎</span><h3>Opprett en profil</h3><p>Fortell om hesten din, eller del erfaringen og det du liker å gjøre i salen.</p></article><article><span class="step-number">02</span><span class="step-icon" aria-hidden="true">⌕</span><h3>Finn en passende hest eller rytter</h3><p>Utforsk profiler som passer med hverdagen, nivået og ønskene dine.</p></article><article><span class="step-number">03</span><span class="step-icon" aria-hidden="true">✦</span><h3>Avtal en aktivitet</h3><p>Finn en god ramme for første tur, økt eller møte i stallen.</p></article></div></section>
     </div>`;
+    document.querySelectorAll('[data-approve-request]').forEach((button) => button.addEventListener('click', () => {
+      const request = getRecordById('requests', button.dataset.approveRequest);
+      if (!request || request.mottaker !== currentUser?.id || request.status !== 'Under behandling') return;
+      updateRequestStatus(request.id, 'Godkjent');
+      addNotification(request.sender, `Forespørselen ${request.name} ble godkjent.`, `#request/${encodeURIComponent(request.id)}`);
+      renderHome();
+      updateAuthAction();
+    }));
+    document.querySelectorAll('[data-reject-request]').forEach((button) => button.addEventListener('click', () => {
+      const request = getRecordById('requests', button.dataset.rejectRequest);
+      if (!request || request.mottaker !== currentUser?.id || request.status !== 'Under behandling') return;
+      updateRequestStatus(request.id, 'Avslått');
+      addNotification(request.sender, `Forespørselen ${request.name} ble avslått.`, `#request/${encodeURIComponent(request.id)}`);
+      renderHome();
+      updateAuthAction();
+    }));
   }
 
   function getRecordById(type, id) { return (data[type] || []).find((record) => record.id === id); }
@@ -234,8 +353,9 @@
     return record ? `<a class="record-link" href="#${singular[type]}/${encodeURIComponent(id)}">${escapeHtml(record.name)}</a>` : escapeHtml(id);
   }
   function renderCell(type, key, value, record) {
-    if (key === 'ownerId' || key === 'userId') return value ? lookupLink(value, 'users') : '—';
+    if (key === 'ownerId' || key === 'userId' || key === 'sender' || key === 'mottaker') return value ? lookupLink(value, 'users') : '—';
     if (key === 'horseId') return value ? lookupLink(value, 'horses') : '—';
+    if (key === 'wishId') return value ? lookupLink(value, 'wishes') : '—';
     if (key === 'name') return `<a class="record-link strong-link" href="#${singular[type]}/${encodeURIComponent(record.id)}">${escapeHtml(value)}</a>`;
     if (key === 'status' || key === 'severity' || key === 'role' || key === 'active') return `<span class="badge badge-${String(value).toLowerCase().replaceAll(' ', '-')}">${escapeHtml(formatValue(key, value))}</span>`;
     return escapeHtml(formatValue(key, value));
@@ -284,6 +404,15 @@
       window.location.hash = '#home';
     });
     updateNavigation('', true);
+  }
+  function renderNotifications() {
+    const currentUser = getCurrentUser();
+    if (!currentUser) { window.location.hash = '#login'; return; }
+    const notifications = getUserNotifications(currentUser.id);
+    app.innerHTML = `<a class="back-link" href="#home">← Til Min Side</a><section class="page-heading"><div><p class="eyebrow">Varsler</p><h1>Notifikasjoner</h1><p class="lede">Her ser du nye hendelser knyttet til forespørsler.</p></div></section><section class="detail-panel">${notifications.length ? `<div class="related-list">${notifications.map((notification) => `<a class="related-item" href="${escapeHtml(notification.link || '#requests')}"><strong>${escapeHtml(notification.message)}</strong><small>${escapeHtml(new Date(notification.createdAt).toLocaleString('nb-NO'))}</small></a>`).join('')}</div>` : '<div class="empty-state compact"><h3>Ingen notifikasjoner akkurat nå.</h3></div>'}</section>`;
+    markNotificationsRead(currentUser.id);
+    updateAuthAction();
+    updateNavigation('');
   }
   function createWishFlowDefaults() {
     const currentUser = getCurrentUser();
@@ -376,11 +505,19 @@
       return type === 'events' && currentUser ? { organizerId: currentUser.id } : {};
     }
     if (contextType === 'users') return type === 'horses' ? { ownerId: contextId } : type === 'wishes' ? { userId: contextId, horseId: '' } : { userId: contextId };
+    if (contextType === 'wishes') {
+      const wish = getRecordById('wishes', contextId);
+      const currentUser = getCurrentUser();
+      const receiverId = wish?.userId || (wish?.horseId ? getRecordById('horses', wish.horseId)?.ownerId : '');
+      if (type === 'requests') return { wishId: contextId, horseId: wish?.horseId || '', sender: currentUser?.id || '', mottaker: receiverId || '' };
+      return {};
+    }
     if (contextType === 'horses') {
       if (type === 'wishes') return { horseId: contextId, userId: '' };
       if (type === 'requests') {
         const currentUser = getCurrentUser();
-        return currentUser && ['Rytter', 'Begge'].includes(currentUser.role) ? { horseId: contextId, userId: currentUser.id } : { horseId: contextId };
+        const horse = getRecordById('horses', contextId);
+        return currentUser && ['Rytter', 'Begge'].includes(currentUser.role) ? { horseId: contextId, sender: currentUser.id, mottaker: horse?.ownerId || '' } : { horseId: contextId, mottaker: horse?.ownerId || '' };
       }
       return { horseId: contextId };
     }
@@ -422,6 +559,15 @@
       fields.filter((field) => field.array).forEach((field) => { values[field.key] = values[field.key].split(',').map((value) => value.trim()).filter(Boolean); });
       fields.filter((field) => field.type === 'number').forEach((field) => { values[field.key] = Number(values[field.key]); });
       Object.keys(values).forEach((key) => { if (typeof values[key] === 'string') values[key] = values[key].trim(); });
+      if (type === 'requests') {
+        const currentUser = getCurrentUser();
+        if (!values.sender && currentUser) values.sender = currentUser.id;
+        if (!values.userId && values.sender) values.userId = values.sender;
+        if (!values.mottaker && values.wishId) {
+          const wish = getRecordById('wishes', values.wishId);
+          values.mottaker = wish?.userId || (wish?.horseId ? getRecordById('horses', wish.horseId)?.ownerId : '');
+        }
+      }
       if (type === 'requests') values.name = `Forespørsel ${values.date} ${values.startTime}`;
       const record = { id: `${idPrefixes[type]}-LOCAL-${Date.now()}`, ...values };
       if (type === 'users' || type === 'horses') record.active = true;
@@ -435,6 +581,7 @@
       try {
         const imageData = imageInput ? await compressImage(imageInput.files[0]) : '';
         saveLocalRecord(type, record);
+        if (type === 'requests' && record.mottaker) addNotification(record.mottaker, `Ny forespørsel mottatt: ${record.name}.`, `#request/${encodeURIComponent(record.id)}`);
         if (imageData) saveProfileImage(record.id, imageData);
         window.location.hash = contextRecord ? returnUrl : `#${singular[type]}/${record.id}`;
       } catch (error) {
@@ -450,16 +597,17 @@
     return `<div class="related-list">${records.map((record) => `<a class="related-item" href="#${singular[type]}/${record.id}"><strong>${escapeHtml(record.name)}</strong><span aria-hidden="true">→</span></a>`).join('')}</div>`;
   }
   function renderDetailValue(key, value) {
-    if (key === 'ownerId' || key === 'userId') return value ? lookupLink(value, 'users') : '—';
+    if (key === 'ownerId' || key === 'userId' || key === 'sender' || key === 'mottaker') return value ? lookupLink(value, 'users') : '—';
     if (key === 'organizerId') return value ? lookupLink(value, 'users') : '—';
     if (key === 'horseId') return value ? lookupLink(value, 'horses') : '—';
+    if (key === 'wishId') return value ? lookupLink(value, 'wishes') : '—';
     if (key === 'participantIds') return value.length ? value.map((userId) => lookupLink(userId, 'users')).join(', ') : 'Ingen deltakere ennå';
     return escapeHtml(formatValue(key, value));
   }
   function renderDetail(type, id, tab) {
     const record = getRecordById(type, id);
     if (!record) { app.innerHTML = '<div class="empty-state"><h1>Posten finnes ikke</h1><a class="record-link" href="#users">Til oversikten</a></div>'; return; }
-    const related = type === 'horses' ? { requests: relatedRecords('requests', 'horseId', id), wishes: relatedRecords('wishes', 'horseId', id), activities: relatedRecords('activities', 'horseId', id), qualifications: relatedRecords('qualifications', 'horseId', id), incidents: relatedRecords('incidents', 'horseId', id) } : type === 'users' ? { requests: relatedRecords('requests', 'userId', id), horses: relatedRecords('horses', 'ownerId', id), wishes: relatedRecords('wishes', 'userId', id), activities: relatedRecords('activities', 'userId', id), qualifications: relatedRecords('qualifications', 'userId', id) } : {};
+    const related = type === 'horses' ? { requests: relatedRecords('requests', 'horseId', id), wishes: relatedRecords('wishes', 'horseId', id), activities: relatedRecords('activities', 'horseId', id), qualifications: relatedRecords('qualifications', 'horseId', id), incidents: relatedRecords('incidents', 'horseId', id) } : type === 'users' ? { requests: data.requests.filter((request) => request.sender === id || request.mottaker === id || request.userId === id), horses: relatedRecords('horses', 'ownerId', id), wishes: relatedRecords('wishes', 'userId', id), activities: relatedRecords('activities', 'userId', id), qualifications: relatedRecords('qualifications', 'userId', id) } : {};
     const tabs = type === 'horses' ? [['details', 'Detaljer'], ['requests', `Forespørsler (${related.requests.length})`], ['wishes', `Ønsker (${related.wishes.length})`], ['activities', `Aktiviteter (${related.activities.length})`], ['qualifications', `Kvalifikasjoner (${related.qualifications.length})`], ['incidents', `Hendelser (${related.incidents.length})`]] : type === 'users' ? [['details', 'Detaljer'], ['requests', `Forespørsler (${related.requests.length})`], ['wishes', `Ønsker (${related.wishes.length})`], ['horses', `Hester (${related.horses.length})`], ['activities', `Aktiviteter (${related.activities.length})`], ['qualifications', `Kvalifikasjoner (${related.qualifications.length})`]] : [];
     const relationKey = type === 'users' ? (tab === 'horses' ? 'horses' : tab) : tab;
     const supportsImage = type === 'users' || type === 'horses';
@@ -470,12 +618,32 @@
     const participants = type === 'events' ? getEventParticipants(record) : [];
     const eventRecord = type === 'events' ? { ...record, participantIds: participants } : record;
     const body = tabs.length && tab && tab !== 'details' ? `${createRelated}${renderRelatedList(relationKey, related[relationKey])}` : `<div class="detail-grid">${detailFields[type].map(([key, label]) => `<div class="detail-field"><dt>${label}</dt><dd>${renderDetailValue(key, eventRecord[key])}</dd></div>`).join('')}</div>`;
-    const requestAction = type === 'horses' ? `<a class="button" href="#new-request/horse/${encodeURIComponent(id)}/requests">Legg til forespørsel</a>` : '';
+    const requestAction = type === 'horses'
+      ? `<a class="button" href="#new-request/horse/${encodeURIComponent(id)}/requests">Legg til forespørsel</a>`
+      : type === 'wishes'
+        ? `<a class="button" href="#new-request/wish/${encodeURIComponent(id)}/requests">Send forespørsel</a>`
+        : type === 'requests' && currentUser && record.mottaker === currentUser.id && record.status === 'Under behandling'
+          ? '<div class="inline-actions"><button class="button" type="button" data-approve-request-detail>Godkjenn forespørsel</button><button class="button button-secondary" type="button" data-reject-request-detail>Avslå forespørsel</button></div>'
+          : '';
     const eventAction = type === 'events' ? currentUser ? `<button class="button" type="button" data-event-participation>${participants.includes(currentUser.id) ? 'Forlat arrangement' : 'Bli med'}</button>` : '<a class="button" href="#login">Logg inn for å delta</a>' : '';
     const primaryAction = requestAction || eventAction;
     app.innerHTML = `<a class="back-link" href="#${type}">← Til ${labels[type].toLowerCase()}</a><section class="record-profile-header ${supportsImage ? '' : 'record-profile-header-no-media'}">${profileMedia}<div class="record-header"><div><p class="eyebrow">${labels[type]}</p><h1>${escapeHtml(record.name)}</h1>${primaryAction ? `<div class="record-primary-action">${primaryAction}</div>` : ''}</div><div class="record-actions">${record.status ? `<span class="badge badge-large badge-${record.status.toLowerCase().replaceAll(' ', '-')}">${escapeHtml(record.status)}</span>` : record.active !== undefined ? `<span class="badge badge-large">${record.active ? 'Aktiv' : 'Inaktiv'}</span>` : ''}</div></div></section>${tabs.length ? `<nav class="inner-tabs" aria-label="Relaterte poster">${tabs.map(([value, label]) => `<a class="${(tab || 'details') === value ? 'is-active' : ''}" href="#${singular[type]}/${id}${value === 'details' ? '' : `/${value}`}"\>${label}</a>`).join('')}</nav>` : ''}<section class="detail-panel">${body}</section>`;
     const eventParticipation = document.querySelector('[data-event-participation]');
     if (eventParticipation) eventParticipation.addEventListener('click', () => { toggleEventParticipant(id, currentUser.id); renderDetail(type, id, tab); });
+    const approveRequestDetail = document.querySelector('[data-approve-request-detail]');
+    if (approveRequestDetail) approveRequestDetail.addEventListener('click', () => {
+      updateRequestStatus(id, 'Godkjent');
+      addNotification(record.sender, `Forespørselen ${record.name} ble godkjent.`, `#request/${encodeURIComponent(record.id)}`);
+      renderDetail(type, id, tab);
+      updateAuthAction();
+    });
+    const rejectRequestDetail = document.querySelector('[data-reject-request-detail]');
+    if (rejectRequestDetail) rejectRequestDetail.addEventListener('click', () => {
+      updateRequestStatus(id, 'Avslått');
+      addNotification(record.sender, `Forespørselen ${record.name} ble avslått.`, `#request/${encodeURIComponent(record.id)}`);
+      renderDetail(type, id, tab);
+      updateAuthAction();
+    });
     const profileImageInput = document.querySelector('[data-profile-image]');
     if (profileImageInput) profileImageInput.addEventListener('change', async () => {
       const errorMessage = document.querySelector('.image-upload-error');
@@ -538,6 +706,10 @@
     }
     if (parts[0] === 'login') {
       renderLogin();
+      return;
+    }
+    if (parts[0] === 'notifications') {
+      renderNotifications();
       return;
     }
     if (parts[0] === 'logout') {

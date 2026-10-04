@@ -24,9 +24,9 @@ window.HesteVennData = {
     { id: 'WISH-006', name: 'Turvenn til Ember', userId: '', horseId: 'HORSE-003', location: 'Lillehammer', størrelsePåHest: 'Stor', erfaring: 'Nybegynner', ønsketype: 'Ønsker en rytter', aktivitetstype: 'Engangstilfelle', ridestil: 'Fôr', status: 'Avsluttet', qualifications: ['Grunnleggende håndtering'], comment: 'Trygg person som ønsker rolige turer og gjerne hjelper til med stell.' }
   ],
   requests: [
-    { id: 'REQUEST-001', name: 'Forespørsel 2026-10-03 10:00', horseId: 'HORSE-001', userId: 'USER-002', date: '2026-10-03', startTime: '10:00', durationHours: 2, activityType: 'Tur', status: 'Under behandling', comment: 'Ønsker en rolig formiddagstur.' },
-    { id: 'REQUEST-002', name: 'Forespørsel 2026-10-05 17:30', horseId: 'HORSE-002', userId: 'USER-001', date: '2026-10-05', startTime: '17:30', durationHours: 1, activityType: 'Dressur', status: 'Godkjent', comment: 'Lett dressurøkt på banen.' },
-    { id: 'REQUEST-003', name: 'Forespørsel 2026-10-08 12:00', horseId: 'HORSE-003', userId: 'USER-004', date: '2026-10-08', startTime: '12:00', durationHours: 1.5, activityType: 'Fôr', status: 'Avslått', comment: 'Kan hjelpe med fôring og stell.' }
+    { id: 'REQUEST-001', name: 'Forespørsel 2026-10-03 10:00', wishId: 'WISH-004', sender: 'USER-002', mottaker: 'USER-001', horseId: 'HORSE-001', userId: 'USER-002', date: '2026-10-03', startTime: '10:00', durationHours: 2, activityType: 'Tur', status: 'Under behandling', comment: 'Ønsker en rolig formiddagstur.' },
+    { id: 'REQUEST-002', name: 'Forespørsel 2026-10-05 17:30', wishId: 'WISH-005', sender: 'USER-001', mottaker: 'USER-005', horseId: 'HORSE-002', userId: 'USER-001', date: '2026-10-05', startTime: '17:30', durationHours: 1, activityType: 'Dressur', status: 'Godkjent', comment: 'Lett dressurøkt på banen.' },
+    { id: 'REQUEST-003', name: 'Forespørsel 2026-10-08 12:00', wishId: 'WISH-006', sender: 'USER-004', mottaker: 'USER-003', horseId: 'HORSE-003', userId: 'USER-004', date: '2026-10-08', startTime: '12:00', durationHours: 1.5, activityType: 'Fôr', status: 'Avslått', comment: 'Kan hjelpe med fôring og stell.' }
   ],
   events: [
     { id: 'EVENT-001', name: 'Fellestur ved Mesna', organizerId: 'USER-001', location: 'Lillehammer', date: '2026-10-17', startTime: '11:00', qualifications: ['Trygg på tur'], description: 'Rolig fellestur med pause underveis.', participantIds: ['USER-002'] },
