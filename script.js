@@ -260,9 +260,10 @@
     });
     const incomingRequests = data.requests.filter((request) => request.sender === currentUser.id || request.mottaker === currentUser.id);
     const localEvents = data.events.filter((event) => event.location === currentUser.location);
+    const ownWishesHeader = '<div class="home-insight-header"><h3>Mine ønsker</h3><a class="button" href="#create-wish"><span aria-hidden="true">✦</span> Opprett Ønske</a></div>';
     const ownWishesBody = ownWishes.length
-      ? `<div class="table-wrap"><table><thead><tr><th scope="col">Ønske</th><th scope="col">Type</th><th scope="col">By</th><th scope="col">Status</th></tr></thead><tbody>${ownWishes.map((wish) => `<tr><td>${lookupLink(wish.id, 'wishes')}</td><td>${escapeHtml(wish.ønsketype)}</td><td>${escapeHtml(wish.location)}</td><td><span class="badge badge-${String(wish.status).toLowerCase().replaceAll(' ', '-')}">${escapeHtml(wish.status)}</span></td></tr>`).join('')}</tbody></table></div>`
-      : '<div class="empty-state compact"><h3>Du har ingen ønsker registrert ennå.</h3></div>';
+      ? `${ownWishesHeader}<div class="table-wrap"><table><thead><tr><th scope="col">Ønske</th><th scope="col">Type</th><th scope="col">By</th><th scope="col">Status</th></tr></thead><tbody>${ownWishes.map((wish) => `<tr><td>${lookupLink(wish.id, 'wishes')}</td><td>${escapeHtml(wish.ønsketype)}</td><td>${escapeHtml(wish.location)}</td><td><span class="badge badge-${String(wish.status).toLowerCase().replaceAll(' ', '-')}">${escapeHtml(wish.status)}</span></td></tr>`).join('')}</tbody></table></div>`
+      : `${ownWishesHeader}<div class="empty-state compact"><h3>Du har ingen ønsker registrert ennå.</h3></div>`;
     const matchingWishBody = matchingWishes.length
       ? `<div class="table-wrap"><table><thead><tr><th scope="col">Ønske</th><th scope="col">Type</th><th scope="col">By</th><th scope="col">Erfaring</th></tr></thead><tbody>${matchingWishes.map((wish) => `<tr><td>${lookupLink(wish.id, 'wishes')}</td><td>${escapeHtml(wish.ønsketype)}</td><td>${escapeHtml(wish.location)}</td><td>${escapeHtml(wish.erfaring)}</td></tr>`).join('')}</tbody></table></div>`
       : '<div class="empty-state compact"><h3>Ingen matchende ønsker tilgjengelig for øyeblikket.</h3></div>';
@@ -272,7 +273,7 @@
     const eventsBody = localEvents.length
       ? `<div class="table-wrap"><table><thead><tr><th scope="col">Arrangement</th><th scope="col">Dato</th><th scope="col">Tid</th><th scope="col">By</th></tr></thead><tbody>${localEvents.map((event) => `<tr><td>${lookupLink(event.id, 'events')}</td><td>${escapeHtml(formatValue('date', event.date))}</td><td>${escapeHtml(event.startTime)}</td><td>${escapeHtml(event.location)}</td></tr>`).join('')}</tbody></table></div>`
       : '<div class="empty-state compact"><h3>Ingen arrangementer i din by akkurat nå.</h3></div>';
-    return `<section class="home-section home-insights-section"><div class="section-heading"><h2>For deg i ${escapeHtml(currentUser.location)}</h2><p class="lede">Se relevante ønsker, forespørsler og arrangementer i nærheten.</p></div><article class="home-insight-card home-insight-card-full"><h3>Matchende ønsker</h3>${matchingWishBody}</article><article class="home-insight-card home-insight-card-full"><h3>Mine forespørsler</h3>${incomingRequestsBody}</article><div class="home-insights-grid home-insights-grid-bottom"><article class="home-insight-card"><h3>Arrangementer i samme by</h3>${eventsBody}</article><article class="home-insight-card"><h3>Mine ønsker</h3>${ownWishesBody}</article></div></section>`;
+    return `<section class="home-section home-insights-section"><div class="section-heading"><h2>For deg i ${escapeHtml(currentUser.location)}</h2><p class="lede">Se relevante ønsker, forespørsler og arrangementer i nærheten.</p></div><article class="home-insight-card home-insight-card-full"><h3>Matchende ønsker</h3>${matchingWishBody}</article><article class="home-insight-card home-insight-card-full"><h3>Mine forespørsler</h3>${incomingRequestsBody}</article><div class="home-insights-grid home-insights-grid-bottom"><article class="home-insight-card"><h3>Arrangementer i samme by</h3>${eventsBody}</article><article class="home-insight-card">${ownWishesBody}</article></div></section>`;
   }
 
   function updateAuthAction() {
@@ -304,7 +305,7 @@
     const homeInsightsSection = renderHomeInsights(currentUser);
     const showWishPrompt = Boolean(currentUser) && !hasActiveWishForUser(currentUser.id);
     const wishPromptSection = showWishPrompt
-      ? `<section class="home-section wish-prompt-section"><div class="section-heading"><p class="eyebrow">Kom i gang</p><h2>Begynn reisen din med et ønske</h2><p class="lede">Legg inn et ønske, så andre hestevenner kan matche med deg for en trygg og god rideopplevelse.</p></div><a class="button" href="#create-wish"><span aria-hidden="true">✦</span> Opprett Ønske</a></section>`
+      ? '<section class="home-section wish-prompt-section"><div class="section-heading"><p class="eyebrow">Kom i gang</p><h2>Begynn reisen din med et ønske</h2><p class="lede">Du kan opprette ønsket ditt direkte i panelet «Mine ønsker» lenger ned på siden.</p></div></section>'
       : '';
     const relatedHorse = currentUser ? data.horses.find((horse) => horse.ownerId === currentUser.id) : null;
     const relatedHorseImage = relatedHorse ? getProfileImage(relatedHorse) : '';
