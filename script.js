@@ -269,6 +269,8 @@
     });
     const incomingRequests = data.requests.filter((request) => request.sender === currentUser.id || request.mottaker === currentUser.id);
     const upcomingActivities = upcomingActivitiesForUser(currentUser.id);
+    const hasIncomingRequests = incomingRequests.length > 0;
+    const hasUpcomingActivities = upcomingActivities.length > 0;
     const localEvents = data.events.filter((event) => event.location === currentUser.location);
     const ownWishesHeader = '<div class="home-insight-header"><h3>Mine ønsker</h3><a class="button" href="#create-wish"><span aria-hidden="true">✦</span> Opprett Ønske</a></div>';
     const ownWishesBody = ownWishes.length
@@ -286,7 +288,10 @@
     const eventsBody = localEvents.length
       ? `<div class="table-wrap"><table><thead><tr><th scope="col">Arrangement</th><th scope="col">Dato</th><th scope="col">Tid</th></tr></thead><tbody>${localEvents.map((event) => `<tr><td>${lookupLink(event.id, 'events')}</td><td>${escapeHtml(formatValue('date', event.date))}</td><td>${escapeHtml(event.startTime)}</td></tr>`).join('')}</tbody></table></div>`
       : '<div class="empty-state compact"><h3>Ingen arrangementer i ditt fylke akkurat nå.</h3></div>';
-    return `<section class="home-section home-insights-section"><div class="section-heading"><h2>Hei ${escapeHtml(currentUser.name)}</h2><p class="lede">Se relevante ønsker, forespørsler og arrangementer i nærheten.</p></div><article class="home-insight-card home-insight-card-full"><h3>Matchende ønsker</h3>${matchingWishBody}</article><div class="home-insights-grid"><article class="home-insight-card"><h3>Mine forespørsler</h3>${incomingRequestsBody}</article><article class="home-insight-card"><h3>Mine kommende aktiviteter</h3>${upcomingActivitiesBody}</article></div><div class="home-insights-grid home-insights-grid-bottom"><article class="home-insight-card"><h3>Arrangementer i samme fylke</h3>${eventsBody}</article><article class="home-insight-card">${ownWishesBody}</article></div></section>`;
+    const requestsActivitiesSection = hasIncomingRequests || hasUpcomingActivities
+      ? `<div class="home-insights-grid home-insights-grid-mid">${hasIncomingRequests ? `<article class="home-insight-card"><h3>Mine forespørsler</h3>${incomingRequestsBody}</article>` : ''}${hasUpcomingActivities ? `<article class="home-insight-card"><h3>Mine kommende aktiviteter</h3>${upcomingActivitiesBody}</article>` : ''}</div>`
+      : '';
+    return `<section class="home-section home-insights-section"><div class="section-heading"><h2>Hei ${escapeHtml(currentUser.name)}</h2><p class="lede">Se relevante ønsker, forespørsler og arrangementer i nærheten.</p></div><article class="home-insight-card home-insight-card-full"><h3>Matchende ønsker</h3>${matchingWishBody}</article>${requestsActivitiesSection}<div class="home-insights-grid home-insights-grid-bottom"><article class="home-insight-card"><h3>Arrangementer i samme fylke</h3>${eventsBody}</article><article class="home-insight-card">${ownWishesBody}</article></div></section>`;
   }
 
   function updateAuthAction() {

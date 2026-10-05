@@ -75,6 +75,9 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 	gap: 20px;
 	margin-bottom: 20px;
 }
+.home-insights-grid-mid {
+	margin-top: 24px;
+}
 .home-insight-card {
 	padding: 22px;
 	border: 1px solid var(--line);
