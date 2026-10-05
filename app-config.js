@@ -56,7 +56,7 @@ window.HesteVennConfig = {
       { key: 'horseId', label: 'Hest', type: 'reference', source: 'horses' }, { key: 'location', label: 'Fylke', required: true },
       { key: 'størrelsePåHest', label: 'Størrelse på hest', type: 'select', required: true, options: ['Liten', 'Mellom', 'Stor'] },
       { key: 'erfaring', label: 'Erfaring', type: 'select', required: true, options: ['Nybegynner', 'Lett øvet', 'Erfaren', 'Profesjonell'] },
-      { key: 'ønsketype', label: 'Ønsketype', type: 'select', required: true, options: ['Ønsker en rytter', 'Ønsker å Ri'] },
+      { key: 'ønsketype', label: 'Ønsketype', type: 'select', required: true, options: ['Ønsker en rytter', 'Ønsker å Ri', 'Hest på fôr'] },
       { key: 'aktivitetstype', label: 'Aktivitetstype', type: 'select', required: true, options: ['Engangstilfelle', 'Månedlig', 'Ukentlig', 'Daglig', 'Periode'] },
       { key: 'ridestil', label: 'Ridestil', type: 'select', required: true, options: ['Tur', 'Dressur', 'Sprang', 'Fôr'] },
       { key: 'status', label: 'Status', type: 'select', required: true, options: ['Aktiv', 'Matchet', 'Avsluttet', 'Pause'] },

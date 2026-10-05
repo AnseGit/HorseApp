@@ -431,7 +431,7 @@
   }
   function renderCreateWishFlowStep1() {
     state.wishFlow = createWishFlowDefaults();
-    app.innerHTML = `<a class="back-link" href="#home">← Til Min Side</a><section class="page-heading"><div><p class="eyebrow">Opprett Ønske · 1 av 3</p><h1>Velg ønsketype</h1><p class="lede">Start med å fortelle om du ønsker å ri eller ønsker en rytter.</p></div></section><form class="profile-form detail-panel" id="wish-flow-step-1"><div class="form-grid"><label class="form-wide"><span>Ønsketype</span><select name="ønsketype" required><option value="">Velg ønsketype</option><option value="Ønsker å Ri">Ønsker å Ri</option><option value="Ønsker en rytter">Ønsker en rytter</option></select></label></div><div class="form-actions"><a class="button button-secondary" href="#home">Avbryt</a><button class="button" type="submit">Neste</button></div></form>`;
+    app.innerHTML = `<a class="back-link" href="#home">← Til Min Side</a><section class="page-heading"><div><p class="eyebrow">Opprett Ønske · 1 av 3</p><h1>Velg ønsketype</h1><p class="lede">Start med å fortelle om du ønsker å ri, ønsker en rytter eller ønsker hest på fôr.</p></div></section><form class="profile-form detail-panel" id="wish-flow-step-1"><div class="form-grid"><label class="form-wide"><span>Ønsketype</span><select name="ønsketype" required><option value="">Velg ønsketype</option><option value="Ønsker å Ri">Ønsker å Ri</option><option value="Ønsker en rytter">Ønsker en rytter</option><option value="Hest på fôr">Hest på fôr</option></select></label></div><div class="form-actions"><a class="button button-secondary" href="#home">Avbryt</a><button class="button" type="submit">Neste</button></div></form>`;
     document.querySelector('#wish-flow-step-1').addEventListener('submit', (event) => {
       event.preventDefault();
       const values = Object.fromEntries(new FormData(event.currentTarget));
@@ -446,31 +446,50 @@
       window.location.hash = '#create-wish';
       return;
     }
+    const currentUser = getCurrentUser();
     const needsHorse = flow.ønsketype === 'Ønsker en rytter';
+    const ownHorses = currentUser ? data.horses.filter((horse) => horse.ownerId === currentUser.id) : [];
+    const ownHorseIds = new Set(ownHorses.map((horse) => horse.id));
     const horseField = needsHorse
-      ? `<label><span>Hest</span><select name="horseId" required><option value="">Velg hest</option>${data.horses.map((horse) => `<option value="${escapeHtml(horse.id)}" ${flow.horseId === horse.id ? 'selected' : ''}>${escapeHtml(horse.name)} · ${escapeHtml(horse.location)}</option>`).join('')}</select></label>`
+      ? `<label><span>Hest</span><select name="horseId" required><option value="">${ownHorses.length ? 'Velg hest' : 'Ingen hester knyttet til profilen din'}</option>${ownHorses.map((horse) => `<option value="${escapeHtml(horse.id)}" ${flow.horseId === horse.id ? 'selected' : ''}>${escapeHtml(horse.name)} · ${escapeHtml(horse.location)}</option>`).join('')}</select></label>`
       : '';
     app.innerHTML = `<a class="back-link" href="#create-wish">← Tilbake</a><section class="page-heading"><div><p class="eyebrow">Opprett Ønske · 2 av 3</p><h1>${escapeHtml(flow.ønsketype)}</h1><p class="lede">Svar på spørsmålene under for å opprette ønsket ditt.</p></div></section><form class="profile-form detail-panel" id="wish-flow-step-2"><div class="form-grid"><label><span>Fylke</span><input name="location" required value="${escapeHtml(flow.location)}"></label><label><span>Erfaring</span><select name="erfaring" required><option value="Nybegynner" ${flow.erfaring === 'Nybegynner' ? 'selected' : ''}>Nybegynner</option><option value="Lett øvet" ${flow.erfaring === 'Lett øvet' ? 'selected' : ''}>Lett øvet</option><option value="Erfaren" ${flow.erfaring === 'Erfaren' ? 'selected' : ''}>Erfaren</option><option value="Profesjonell" ${flow.erfaring === 'Profesjonell' ? 'selected' : ''}>Profesjonell</option></select></label><label><span>Aktivitetstype</span><select name="aktivitetstype" required><option value="Engangstilfelle" ${flow.aktivitetstype === 'Engangstilfelle' ? 'selected' : ''}>Engangstilfelle</option><option value="Månedlig" ${flow.aktivitetstype === 'Månedlig' ? 'selected' : ''}>Månedlig</option><option value="Ukentlig" ${flow.aktivitetstype === 'Ukentlig' ? 'selected' : ''}>Ukentlig</option><option value="Daglig" ${flow.aktivitetstype === 'Daglig' ? 'selected' : ''}>Daglig</option><option value="Periode" ${flow.aktivitetstype === 'Periode' ? 'selected' : ''}>Periode</option></select></label><label><span>Størrelse på hest</span><select name="størrelsePåHest" required><option value="Liten" ${flow.størrelsePåHest === 'Liten' ? 'selected' : ''}>Liten</option><option value="Mellom" ${flow.størrelsePåHest === 'Mellom' ? 'selected' : ''}>Mellom</option><option value="Stor" ${flow.størrelsePåHest === 'Stor' ? 'selected' : ''}>Stor</option></select></label><label><span>Ridestil</span><select name="ridestil" required><option value="Tur" ${flow.ridestil === 'Tur' ? 'selected' : ''}>Tur</option><option value="Dressur" ${flow.ridestil === 'Dressur' ? 'selected' : ''}>Dressur</option><option value="Sprang" ${flow.ridestil === 'Sprang' ? 'selected' : ''}>Sprang</option><option value="Fôr" ${flow.ridestil === 'Fôr' ? 'selected' : ''}>Fôr</option></select></label>${horseField}<label class="form-wide"><span>Kvalifikasjoner</span><input name="qualifications" value="${escapeHtml(flow.qualifications)}" placeholder="For eksempel Trygg på tur, Grunnleggende håndtering"></label><label class="form-wide"><span>Kommentar</span><textarea name="comment" rows="5">${escapeHtml(flow.comment)}</textarea></label></div><div class="form-actions"><a class="button button-secondary" href="#create-wish">Tilbake</a><button class="button" type="submit">Opprett ønske</button></div><p class="form-error" role="alert" hidden></p></form>`;
+    const buildWishAutoName = (wishType, currentUser, selectedHorseId, formValues) => {
+      const firstName = String(currentUser?.name || '').trim().split(/\s+/).filter(Boolean)[0] || 'Bruker';
+      const horseName = selectedHorseId ? getHorseName(selectedHorseId) : '';
+      const ridestil = String(formValues.ridestil || '').trim().toLowerCase();
+      const erfaring = String(formValues.erfaring || '').trim().toLowerCase();
+
+      if (wishType === 'Ønsker en rytter') {
+        return `${horseName || 'Hest'} ønsker ${erfaring || 'erfaren'} rytter`;
+      }
+      if (wishType === 'Hest på fôr') {
+        return `${firstName} ønsker ${erfaring || 'erfaren'} hest på fôr`;
+      }
+      return `${firstName} ønsker å ri ${ridestil || 'tur'}`;
+    };
     document.querySelector('#wish-flow-step-2').addEventListener('submit', (event) => {
       event.preventDefault();
       const form = event.currentTarget;
       const values = Object.fromEntries(new FormData(form));
-      const currentUser = getCurrentUser();
       const wishType = flow.ønsketype;
       const horseId = wishType === 'Ønsker en rytter' ? (values.horseId || '').trim() : '';
-      const userId = wishType === 'Ønsker å Ri' ? (currentUser?.id || '') : '';
+      const userId = wishType === 'Ønsker en rytter' ? '' : (currentUser?.id || '');
       const message = form.querySelector('.form-error');
       if (wishType === 'Ønsker en rytter' && !horseId) {
         message.textContent = 'Velg hest for ønsket ditt.';
         message.hidden = false;
         return;
       }
-      const now = new Date();
-      const dateToken = now.toLocaleDateString('nb-NO');
-      const wishNamePrefix = wishType === 'Ønsker en rytter' ? 'Ønsker en rytter' : 'Ønsker å Ri';
+      if (wishType === 'Ønsker en rytter' && !ownHorseIds.has(horseId)) {
+        message.textContent = 'Du kan bare velge hester knyttet til din profil.';
+        message.hidden = false;
+        return;
+      }
+      const autoName = buildWishAutoName(wishType, currentUser, horseId, values);
       const record = {
         id: `${idPrefixes.wishes}-LOCAL-${Date.now()}`,
-        name: `${wishNamePrefix} · ${values.location.trim()} · ${dateToken}`,
+        name: autoName,
         userId,
         horseId,
         location: values.location.trim(),
@@ -485,7 +504,7 @@
       };
       saveLocalRecord('wishes', record);
       state.wishFlow = createWishFlowDefaults();
-      window.location.hash = `#create-wish/fullfort/${encodeURIComponent(record.id)}`;
+      window.location.hash = '#home';
     });
     updateNavigation('');
   }
@@ -534,13 +553,24 @@
     return `<label class="${field.wide ? 'form-wide' : ''}"><span>${field.label}</span>${control}</label>`;
   }
 
-  function renderEditField(field, record) {
+  function renderEditField(field, record, isLocked = false) {
     const value = record[field.key];
     const isArray = field.array;
     const normalizedValue = isArray ? (Array.isArray(value) ? value.join(', ') : '') : (value ?? '');
     const attributes = `${field.required ? ' required' : ''}${field.min !== undefined ? ` min="${field.min}"` : ''}${field.max !== undefined ? ` max="${field.max}"` : ''}${field.step !== undefined ? ` step="${field.step}"` : ''}${field.autocomplete ? ` autocomplete="${field.autocomplete}"` : ''}${field.placeholder ? ` placeholder="${escapeHtml(field.placeholder)}"` : ''}`;
     let control;
     if (field.type === 'image') return '';
+    if (isLocked) {
+      if (field.type === 'reference') {
+        const labelText = normalizedValue ? getRecordById(field.source, normalizedValue)?.name || normalizedValue : '—';
+        control = `<input value="${escapeHtml(labelText)}" disabled><input type="hidden" name="${field.key}" value="${escapeHtml(normalizedValue)}">`;
+      } else if (field.type === 'select') {
+        control = `<select disabled>${field.options.map((option) => `<option value="${escapeHtml(option)}" ${String(option) === String(normalizedValue) ? 'selected' : ''}>${escapeHtml(option)}</option>`).join('')}</select><input type="hidden" name="${field.key}" value="${escapeHtml(normalizedValue)}">`;
+      } else {
+        control = `<input value="${escapeHtml(normalizedValue)}" disabled><input type="hidden" name="${field.key}" value="${escapeHtml(normalizedValue)}">`;
+      }
+      return `<label class="${field.wide ? 'form-wide' : ''}"><span>${field.label}</span>${control}</label>`;
+    }
     if (field.type === 'select') {
       control = `<select name="${field.key}"${attributes}>${field.options.map((option) => `<option value="${escapeHtml(option)}" ${String(option) === String(normalizedValue) ? 'selected' : ''}>${escapeHtml(option)}</option>`).join('')}</select>`;
     } else if (field.type === 'reference') {
@@ -563,8 +593,9 @@
       return;
     }
     const fields = (createFields[type] || []).filter((field) => field.type !== 'image');
+    const lockedWishFields = type === 'wishes' ? new Set(['userId', 'ønsketype']) : new Set();
     const returnUrl = `#${singular[type]}/${encodeURIComponent(id)}${returnTab ? `/${returnTab}` : ''}`;
-    app.innerHTML = `<a class="back-link" href="${returnUrl}">← Tilbake</a><section class="page-heading"><div><p class="eyebrow">Rediger post</p><h1>Endre ${escapeHtml(record.name)}</h1><p class="lede">Oppdater feltene under og lagre endringene.</p></div></section><form class="profile-form detail-panel" id="edit-form"><div class="form-grid">${fields.map((field) => renderEditField(field, record)).join('')}</div><div class="form-actions"><a class="button button-secondary" href="${returnUrl}">Avbryt</a><button class="button" type="submit">Lagre endringer</button></div><p class="form-error" role="alert" hidden></p></form>`;
+    app.innerHTML = `<a class="back-link" href="${returnUrl}">← Tilbake</a><section class="page-heading"><div><p class="eyebrow">Rediger post</p><h1>Endre ${escapeHtml(record.name)}</h1><p class="lede">Oppdater feltene under og lagre endringene.</p></div></section><form class="profile-form detail-panel" id="edit-form"><div class="form-grid">${fields.map((field) => renderEditField(field, record, lockedWishFields.has(field.key))).join('')}</div><div class="form-actions"><a class="button button-secondary" href="${returnUrl}">Avbryt</a><button class="button" type="submit">Lagre endringer</button></div><p class="form-error" role="alert" hidden></p></form>`;
     document.querySelector('#edit-form').addEventListener('submit', (event) => {
       event.preventDefault();
       const form = event.currentTarget;
@@ -592,6 +623,23 @@
     const returnUrl = contextRecord ? `#${singular[contextType]}/${contextId}/${returnTab}` : `#${type}`;
     const contextText = contextRecord ? ` Relasjonen til ${contextRecord.name} legges til automatisk.` : '';
     app.innerHTML = `<a class="back-link" href="${returnUrl}">← Tilbake</a><section class="page-heading"><div><p class="eyebrow">Ny post</p><h1>Opprett ${createLabels[type]}</h1><p class="lede">Posten lagres lokalt i denne nettleseren.${escapeHtml(contextText)}</p></div></section><form class="profile-form detail-panel" id="create-form"><div class="form-grid">${fields.map((field) => renderCreateField(field, presets)).join('')}</div><div class="form-actions"><a class="button button-secondary" href="${returnUrl}">Avbryt</a><button class="button" type="submit">Lagre ${createLabels[type]}</button></div><p class="form-error" role="alert" hidden></p></form>`;
+    if (type === 'wishes') {
+      const form = document.querySelector('#create-form');
+      const wishTypeSelect = form.querySelector('[name="ønsketype"]');
+      const horseSelect = form.querySelector('[name="horseId"]');
+      const horseField = horseSelect ? horseSelect.closest('label') : null;
+      const toggleHorseField = () => {
+        if (!wishTypeSelect || !horseField || !horseSelect) return;
+        const needsHorse = wishTypeSelect.value === 'Ønsker en rytter';
+        horseField.hidden = !needsHorse;
+        horseSelect.required = needsHorse;
+        if (!needsHorse) horseSelect.value = '';
+      };
+      if (wishTypeSelect && horseField && horseSelect) {
+        wishTypeSelect.addEventListener('change', toggleHorseField);
+        toggleHorseField();
+      }
+    }
     const imageInput = document.querySelector('[name="imageFile"]');
     if (imageInput) imageInput.addEventListener('change', () => {
       const preview = document.querySelector('.image-preview');
@@ -665,18 +713,30 @@
     const currentUser = getCurrentUser();
     const participants = type === 'events' ? getEventParticipants(record) : [];
     const eventRecord = type === 'events' ? { ...record, participantIds: participants } : record;
-    const body = tabs.length && tab && tab !== 'details' ? `${createRelated}${renderRelatedList(relationKey, related[relationKey])}` : `<div class="detail-grid">${detailFields[type].map(([key, label]) => `<div class="detail-field"><dt>${label}</dt><dd>${renderDetailValue(key, eventRecord[key])}</dd></div>`).join('')}</div>`;
+    const visibleDetailFields = type === 'wishes'
+      ? [
+          ...detailFields[type].filter(([key]) => key === 'userId'),
+          ...detailFields[type].filter(([key]) => key === 'status'),
+          ...detailFields[type].filter(([key]) => key === 'horseId'),
+          ...detailFields[type].filter(([key]) => key === 'ønsketype'),
+          ...detailFields[type].filter(([key]) => !['userId', 'status', 'horseId', 'ønsketype'].includes(key))
+        ]
+      : detailFields[type];
+    const body = tabs.length && tab && tab !== 'details' ? `${createRelated}${renderRelatedList(relationKey, related[relationKey])}` : `<div class="detail-grid">${visibleDetailFields.map(([key, label]) => `<div class="detail-field"><dt>${label}</dt><dd>${renderDetailValue(key, eventRecord[key])}</dd></div>`).join('')}</div>`;
+    const isOwnWish = type === 'wishes' && currentUser ? isWishOwnedByUser(record, currentUser.id) : false;
     const requestAction = type === 'horses'
       ? `<a class="button" href="#new-request/horse/${encodeURIComponent(id)}/requests">Legg til forespørsel</a>`
       : type === 'wishes'
-        ? `<a class="button" href="#new-request/wish/${encodeURIComponent(id)}/requests">Send forespørsel</a>`
+        ? (isOwnWish ? '' : `<a class="button" href="#new-request/wish/${encodeURIComponent(id)}/requests">Send forespørsel</a>`)
         : type === 'requests' && currentUser && record.mottaker === currentUser.id && record.status === 'Under behandling'
           ? '<div class="inline-actions"><button class="button" type="button" data-approve-request-detail>Godkjenn forespørsel</button><button class="button button-secondary" type="button" data-reject-request-detail>Avslå forespørsel</button></div>'
           : '';
     const eventAction = type === 'events' ? currentUser ? `<button class="button" type="button" data-event-participation>${participants.includes(currentUser.id) ? 'Forlat arrangement' : 'Bli med'}</button>` : '<a class="button" href="#login">Logg inn for å delta</a>' : '';
     const primaryAction = requestAction || eventAction;
     const editAction = canEditRecord(type, record, currentUser) ? `<a class="button button-secondary" href="#edit/${singular[type]}/${encodeURIComponent(id)}${tab ? `/${tab}` : ''}">Endre</a>` : '';
-    app.innerHTML = `<a class="back-link" href="#${type}">← Til ${labels[type].toLowerCase()}</a><section class="record-profile-header ${supportsImage ? '' : 'record-profile-header-no-media'}">${profileMedia}<div class="record-header"><div><p class="eyebrow">${labels[type]}</p><h1>${escapeHtml(record.name)}</h1>${primaryAction ? `<div class="record-primary-action">${primaryAction}</div>` : ''}</div><div class="record-actions">${editAction}${record.status ? `<span class="badge badge-large badge-${record.status.toLowerCase().replaceAll(' ', '-')}">${escapeHtml(record.status)}</span>` : record.active !== undefined ? `<span class="badge badge-large">${record.active ? 'Aktiv' : 'Inaktiv'}</span>` : ''}</div></div></section>${tabs.length ? `<nav class="inner-tabs" aria-label="Relaterte poster">${tabs.map(([value, label]) => `<a class="${(tab || 'details') === value ? 'is-active' : ''}" href="#${singular[type]}/${id}${value === 'details' ? '' : `/${value}`}"\>${label}</a>`).join('')}</nav>` : ''}<section class="detail-panel">${body}</section>`;
+    const detailEditAction = editAction ? `<div class="form-actions">${editAction}</div>` : '';
+    const statusBadge = type !== 'wishes' && record.status ? `<span class="badge badge-large badge-${record.status.toLowerCase().replaceAll(' ', '-')}">${escapeHtml(record.status)}</span>` : record.active !== undefined ? `<span class="badge badge-large">${record.active ? 'Aktiv' : 'Inaktiv'}</span>` : '';
+    app.innerHTML = `<a class="back-link" href="#${type}">← Til ${labels[type].toLowerCase()}</a><section class="record-profile-header ${supportsImage ? '' : 'record-profile-header-no-media'}">${profileMedia}<div class="record-header"><div><p class="eyebrow">${labels[type]}</p><h1>${escapeHtml(record.name)}</h1>${primaryAction ? `<div class="record-primary-action">${primaryAction}</div>` : ''}</div><div class="record-actions">${statusBadge}</div></div></section>${tabs.length ? `<nav class="inner-tabs" aria-label="Relaterte poster">${tabs.map(([value, label]) => `<a class="${(tab || 'details') === value ? 'is-active' : ''}" href="#${singular[type]}/${id}${value === 'details' ? '' : `/${value}`}"\>${label}</a>`).join('')}</nav>` : ''}<section class="detail-panel">${body}${detailEditAction}</section>`;
     const eventParticipation = document.querySelector('[data-event-participation]');
     if (eventParticipation) eventParticipation.addEventListener('click', () => { toggleEventParticipant(id, currentUser.id); renderDetail(type, id, tab); });
     const approveRequestDetail = document.querySelector('[data-approve-request-detail]');
