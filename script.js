@@ -67,6 +67,16 @@
     data[type].push(record);
   }
 
+  function generateNextRequestName() {
+    const maxSequence = data.requests.reduce((max, request) => {
+      const match = /^FS-(\d+)$/.exec(String(request?.name || '').trim());
+      if (!match) return max;
+      const sequence = Number(match[1]);
+      return Number.isFinite(sequence) ? Math.max(max, sequence) : max;
+    }, 0);
+    return `FS-${String(maxSequence + 1).padStart(5, '0')}`;
+  }
+
   function getProfileImages() {
     try { return JSON.parse(localStorage.getItem(profileImagesKey) || '{}'); }
     catch (error) { return {}; }
@@ -214,6 +224,16 @@
     syncLocalType('requests');
   }
 
+  function syncActivityFromRequest(request) {
+    if (!request?.id) return;
+    const activity = data.activities.find((item) => item.sourceRequestId === request.id);
+    if (!activity) return;
+    activity.date = request.date || activity.date;
+    activity.startTime = request.startTime || activity.startTime;
+    if (request.durationHours) activity.duration = `${request.durationHours} timer`;
+    syncLocalType('activities');
+  }
+
   function activityDateTime(record) {
     const date = record?.date;
     if (!date) return Number.POSITIVE_INFINITY;
@@ -274,13 +294,13 @@
     const localEvents = data.events.filter((event) => event.location === currentUser.location);
     const ownWishesHeader = '<div class="home-insight-header"><h3>Mine ønsker</h3><a class="button" href="#create-wish"><span aria-hidden="true">✦</span> Opprett Ønske</a></div>';
     const ownWishesBody = ownWishes.length
-      ? `${ownWishesHeader}<div class="table-wrap"><table><thead><tr><th scope="col">Ønske</th><th scope="col">Type</th><th scope="col">Status</th></tr></thead><tbody>${ownWishes.map((wish) => `<tr><td>${lookupLink(wish.id, 'wishes')}</td><td>${escapeHtml(wish.ønsketype)}</td><td><span class="badge badge-${String(wish.status).toLowerCase().replaceAll(' ', '-')}">${escapeHtml(wish.status)}</span></td></tr>`).join('')}</tbody></table></div>`
+      ? `${ownWishesHeader}<div class="table-wrap"><table><thead><tr><th scope="col">Ønske</th><th scope="col">Erfaring</th><th scope="col">Status</th></tr></thead><tbody>${ownWishes.map((wish) => `<tr><td>${lookupLink(wish.id, 'wishes')}</td><td>${escapeHtml(wish.erfaring)}</td><td><span class="badge badge-${String(wish.status).toLowerCase().replaceAll(' ', '-')}">${escapeHtml(wish.status)}</span></td></tr>`).join('')}</tbody></table></div>`
       : `${ownWishesHeader}<div class="empty-state compact"><h3>Du har ingen ønsker registrert ennå.</h3></div>`;
     const matchingWishBody = matchingWishes.length
-      ? `<div class="table-wrap"><table><thead><tr><th scope="col">Ønske</th><th scope="col">Type</th><th scope="col">Fylke</th><th scope="col">Erfaring</th></tr></thead><tbody>${matchingWishes.map((wish) => `<tr><td>${lookupLink(wish.id, 'wishes')}</td><td>${escapeHtml(wish.ønsketype)}</td><td>${escapeHtml(wish.location)}</td><td>${escapeHtml(wish.erfaring)}</td></tr>`).join('')}</tbody></table></div>`
+      ? `<div class="table-wrap"><table><thead><tr><th scope="col">Ønske</th><th scope="col">Erfaring</th><th scope="col">Fylke</th></tr></thead><tbody>${matchingWishes.map((wish) => `<tr><td>${lookupLink(wish.id, 'wishes')}</td><td>${escapeHtml(wish.erfaring)}</td><td>${escapeHtml(wish.location)}</td></tr>`).join('')}</tbody></table></div>`
       : '<div class="empty-state compact"><h3>Ingen matchende ønsker tilgjengelig for øyeblikket.</h3></div>';
     const incomingRequestsBody = incomingRequests.length
-      ? `<div class="table-wrap"><table><thead><tr><th scope="col">Forespørsel</th><th scope="col">Ønske</th><th scope="col">Rolle</th><th scope="col">Status</th><th scope="col">Handling</th></tr></thead><tbody>${incomingRequests.map((request) => { const isReceiver = request.mottaker === currentUser.id; const canRespond = isReceiver && request.status === 'Under behandling'; return `<tr><td>${lookupLink(request.id, 'requests')}</td><td>${request.wishId ? lookupLink(request.wishId, 'wishes') : '—'}</td><td>${isReceiver ? 'Mottaker' : 'Sender'}</td><td><span class="badge badge-${String(request.status).toLowerCase().replaceAll(' ', '-')}">${escapeHtml(request.status)}</span></td><td>${canRespond ? `<div class="inline-actions"><button class="button" type="button" data-approve-request="${escapeHtml(request.id)}">Godkjenn</button><button class="button button-secondary" type="button" data-reject-request="${escapeHtml(request.id)}">Avslå</button></div>` : '—'}</td></tr>`; }).join('')}</tbody></table></div>`
+      ? `<div class="table-wrap"><table><thead><tr><th scope="col">Forespørsel</th><th scope="col">Ønske</th><th scope="col">Rolle</th><th scope="col">Status</th></tr></thead><tbody>${incomingRequests.map((request) => { const isReceiver = request.mottaker === currentUser.id; return `<tr><td>${lookupLink(request.id, 'requests')}</td><td>${request.wishId ? lookupLink(request.wishId, 'wishes') : '—'}</td><td>${isReceiver ? 'Mottaker' : 'Sender'}</td><td><span class="badge badge-${String(request.status).toLowerCase().replaceAll(' ', '-')}">${escapeHtml(request.status)}</span></td></tr>`; }).join('')}</tbody></table></div>`
       : '<div class="empty-state compact"><h3>Ingen forespørsler tilgjengelig for øyeblikket.</h3></div>';
     const upcomingActivitiesBody = upcomingActivities.length
       ? `<div class="table-wrap"><table><thead><tr><th scope="col">Aktivitet</th><th scope="col">Dato</th><th scope="col">Tid</th><th scope="col">Hest</th></tr></thead><tbody>${upcomingActivities.map((activity) => `<tr><td>${lookupLink(activity.id, 'activities')}</td><td>${escapeHtml(formatValue('date', activity.date))}</td><td>${escapeHtml(activity.startTime || '—')}</td><td>${activity.horseId ? lookupLink(activity.horseId, 'horses') : '—'}</td></tr>`).join('')}</tbody></table></div>`
@@ -289,7 +309,7 @@
       ? `<div class="table-wrap"><table><thead><tr><th scope="col">Arrangement</th><th scope="col">Dato</th><th scope="col">Tid</th></tr></thead><tbody>${localEvents.map((event) => `<tr><td>${lookupLink(event.id, 'events')}</td><td>${escapeHtml(formatValue('date', event.date))}</td><td>${escapeHtml(event.startTime)}</td></tr>`).join('')}</tbody></table></div>`
       : '<div class="empty-state compact"><h3>Ingen arrangementer i ditt fylke akkurat nå.</h3></div>';
     const requestsActivitiesSection = hasIncomingRequests || hasUpcomingActivities
-      ? `<div class="home-insights-grid home-insights-grid-mid">${hasIncomingRequests ? `<article class="home-insight-card"><h3>Mine forespørsler</h3>${incomingRequestsBody}</article>` : ''}${hasUpcomingActivities ? `<article class="home-insight-card"><h3>Mine kommende aktiviteter</h3>${upcomingActivitiesBody}</article>` : ''}</div>`
+      ? `<div class="home-insights-grid home-insights-grid-mid"><article class="home-insight-card"><h3>Mine forespørsler</h3>${incomingRequestsBody}</article><article class="home-insight-card"><h3>Mine kommende aktiviteter</h3>${upcomingActivitiesBody}</article></div>`
       : '';
     return `<section class="home-section home-insights-section"><div class="section-heading"><h2>Hei ${escapeHtml(currentUser.name)}</h2><p class="lede">Se relevante ønsker, forespørsler og arrangementer i nærheten.</p></div><article class="home-insight-card home-insight-card-full"><h3>Matchende ønsker</h3>${matchingWishBody}</article>${requestsActivitiesSection}<div class="home-insights-grid home-insights-grid-bottom"><article class="home-insight-card"><h3>Arrangementer i samme fylke</h3>${eventsBody}</article><article class="home-insight-card">${ownWishesBody}</article></div></section>`;
   }
@@ -329,6 +349,12 @@
     const nextActivitySection = currentUser && nextActivity
       ? `<section class="home-section activity-preview"><div><p class="eyebrow">Et glimt av hverdagen</p><h2>Neste aktivitet</h2><p>${escapeHtml(nextActivity.name)}</p></div><div class="activity-preview-details"><div><span>Hest</span><a href="#horse/${nextActivity.horseId}">${escapeHtml(getHorseName(nextActivity.horseId))}</a></div><div><span>Rytter</span><a href="#user/${nextActivity.userId}">${escapeHtml(getUserName(nextActivity.userId))}</a></div><div><span>Når</span><strong>${escapeHtml(nextActivity.date)} · ${escapeHtml(nextActivity.startTime || '—')}</strong></div><div><span>Fylke</span><strong>${escapeHtml(nextActivity.location)}</strong></div></div><span class="badge">${escapeHtml(nextActivity.status || 'Planlagt')}</span></section>`
       : '';
+    const choiceSection = currentUser
+      ? ''
+      : `<section class="home-section"><div class="section-heading"><h2>Hva passer best for deg?</h2></div><div class="choice-grid"><a class="choice-card choice-owner" href="#wishes/filter/ønsketype/%C3%98nsker%20%C3%A5%20Ri"><span class="choice-icon" aria-hidden="true">♞</span><strong>Jeg har hest</strong><p>Finn en rytter${currentUser ? ` i ${escapeHtml(currentUser.location)}` : ''} som passer din hest.</p><span class="choice-link">Finn en rytter →</span></a><a class="choice-card choice-rider" href="#wishes/filter/ønsketype/%C3%98nsker%20en%20rytter"><span class="choice-icon" aria-hidden="true">⌁</span><strong>Jeg ønsker å ri</strong><p>Finn en hest${currentUser ? ` i ${escapeHtml(currentUser.location)}` : ''} som passer din erfaring og rideønske.</p><span class="choice-link">Utforsk hester →</span></a><a class="choice-card choice-event" href="#events${locationFilter}"><span class="choice-icon" aria-hidden="true">◎</span><strong>Utforsk arrangementer</strong><p>Finn arrangementer${currentUser ? ` i ${escapeHtml(currentUser.location)}` : ' i nærheten'} og møt andre hestevenner.</p><span class="choice-link">Se arrangementer →</span></a></div></section>`;
+    const howSection = currentUser
+      ? ''
+      : '<section class="home-section how-section"><div class="section-heading centered"><p class="eyebrow">Enkelt å utforske</p><h2>Slik fungerer HesteVenn</h2></div><div class="steps"><article><span class="step-number">01</span><span class="step-icon" aria-hidden="true">◎</span><h3>Opprett en profil</h3><p>Fortell om hesten din, eller del erfaringen og det du liker å gjøre i salen.</p></article><article><span class="step-number">02</span><span class="step-icon" aria-hidden="true">⌕</span><h3>Finn en passende hest eller rytter</h3><p>Utforsk profiler som passer med hverdagen, nivået og ønskene dine.</p></article><article><span class="step-number">03</span><span class="step-icon" aria-hidden="true">✦</span><h3>Avtal en aktivitet</h3><p>Finn en god ramme for første tur, økt eller møte i stallen.</p></article></div></section>';
     const relatedHorse = currentUser ? data.horses.find((horse) => horse.ownerId === currentUser.id) : null;
     const relatedHorseImage = relatedHorse ? getProfileImage(relatedHorse) : '';
     const heroVisual = relatedHorseImage ? `<div class="hero-mark hero-mark-image"><img src="${escapeHtml(relatedHorseImage)}" alt="${escapeHtml(relatedHorse.name)}"></div>` : '<div class="hero-mark" aria-hidden="true">♞<span>✦</span></div>';
@@ -337,27 +363,10 @@
       ${wishPromptSection}
       ${nextActivitySection}
       ${homeInsightsSection}
-      <section class="home-section"><div class="section-heading"><h2>Hva passer best for deg?</h2></div><div class="choice-grid"><a class="choice-card choice-owner" href="#wishes/filter/ønsketype/%C3%98nsker%20%C3%A5%20Ri"><span class="choice-icon" aria-hidden="true">♞</span><strong>Jeg har hest</strong><p>Finn en rytter${currentUser ? ` i ${escapeHtml(currentUser.location)}` : ''} som passer din hest.</p><span class="choice-link">Finn en rytter →</span></a><a class="choice-card choice-rider" href="#wishes/filter/ønsketype/%C3%98nsker%20en%20rytter"><span class="choice-icon" aria-hidden="true">⌁</span><strong>Jeg ønsker å ri</strong><p>Finn en hest${currentUser ? ` i ${escapeHtml(currentUser.location)}` : ''} som passer din erfaring og rideønske.</p><span class="choice-link">Utforsk hester →</span></a><a class="choice-card choice-event" href="#events${locationFilter}"><span class="choice-icon" aria-hidden="true">◎</span><strong>Utforsk arrangementer</strong><p>Finn arrangementer${currentUser ? ` i ${escapeHtml(currentUser.location)}` : ' i nærheten'} og møt andre hestevenner.</p><span class="choice-link">Se arrangementer →</span></a></div></section>
+      ${choiceSection}
       <section class="home-section nearby-section"><div class="section-heading heading-row"><div><p class="eyebrow">Noen hester i nærheten</p><h2>Møt din neste turkamerat</h2></div><a class="text-link" href="#horses">Se alle hester →</a></div><div class="home-horse-grid">${horses.map((horse) => `<article class="home-horse-card"><div class="home-horse-art" aria-hidden="true">♞</div><div class="home-horse-content"><div class="home-horse-title"><h3>${escapeHtml(horse.name)}</h3><span>${horse.age} år</span></div><p>${escapeHtml(horse.breed)} · ${escapeHtml(horse.location)}</p><dl><div><dt>Passer for</dt><dd>${escapeHtml(horse.suitableActivities.join(' og '))}</dd></div><div><dt>Ønsket erfaring</dt><dd>${escapeHtml(horse.experienceRequirement)}</dd></div></dl><a class="button button-outline" href="#horse/${horse.id}">Se profil</a></div></article>`).join('')}</div></section>
-      <section class="home-section how-section"><div class="section-heading centered"><p class="eyebrow">Enkelt å utforske</p><h2>Slik fungerer HesteVenn</h2></div><div class="steps"><article><span class="step-number">01</span><span class="step-icon" aria-hidden="true">◎</span><h3>Opprett en profil</h3><p>Fortell om hesten din, eller del erfaringen og det du liker å gjøre i salen.</p></article><article><span class="step-number">02</span><span class="step-icon" aria-hidden="true">⌕</span><h3>Finn en passende hest eller rytter</h3><p>Utforsk profiler som passer med hverdagen, nivået og ønskene dine.</p></article><article><span class="step-number">03</span><span class="step-icon" aria-hidden="true">✦</span><h3>Avtal en aktivitet</h3><p>Finn en god ramme for første tur, økt eller møte i stallen.</p></article></div></section>
+      ${howSection}
     </div>`;
-    document.querySelectorAll('[data-approve-request]').forEach((button) => button.addEventListener('click', () => {
-      const request = getRecordById('requests', button.dataset.approveRequest);
-      if (!request || request.mottaker !== currentUser?.id || request.status !== 'Under behandling') return;
-      updateRequestStatus(request.id, 'Godkjent');
-      createActivityFromApprovedRequest(request.id);
-      addNotification(request.sender, `Forespørselen ${request.name} ble godkjent.`, `#request/${encodeURIComponent(request.id)}`);
-      renderHome();
-      updateAuthAction();
-    }));
-    document.querySelectorAll('[data-reject-request]').forEach((button) => button.addEventListener('click', () => {
-      const request = getRecordById('requests', button.dataset.rejectRequest);
-      if (!request || request.mottaker !== currentUser?.id || request.status !== 'Under behandling') return;
-      updateRequestStatus(request.id, 'Avslått');
-      addNotification(request.sender, `Forespørselen ${request.name} ble avslått.`, `#request/${encodeURIComponent(request.id)}`);
-      renderHome();
-      updateAuthAction();
-    }));
   }
 
   const helperFactory = window.HesteVennHelpers;
@@ -587,6 +596,10 @@
   function renderEditForm(type, id, returnTab) {
     const record = getRecordById(type, id);
     if (!record) { window.location.hash = `#${type}`; return; }
+    if (type === 'requests') {
+      app.innerHTML = '<div class="empty-state"><h2>Forespørsel kan ikke redigeres direkte</h2><p>Bruk knappen «Foreslå nytt tidspunkt» på forespørselen for å endre tid.</p></div>';
+      return;
+    }
     const currentUser = getCurrentUser();
     if (!canEditRecord(type, record, currentUser)) {
       app.innerHTML = '<div class="empty-state"><h2>Du kan ikke redigere denne posten</h2><p>Kun egne poster kan redigeres.</p></div>';
@@ -664,7 +677,7 @@
           values.mottaker = wish?.userId || (wish?.horseId ? getRecordById('horses', wish.horseId)?.ownerId : '');
         }
       }
-      if (type === 'requests') values.name = `Forespørsel ${values.date} ${values.startTime}`;
+      if (type === 'requests') values.name = generateNextRequestName();
       const record = { id: `${idPrefixes[type]}-LOCAL-${Date.now()}`, ...values };
       if (type === 'users' || type === 'horses') record.active = true;
       if (type === 'events') record.participantIds = [];
@@ -724,19 +737,34 @@
       : detailFields[type];
     const body = tabs.length && tab && tab !== 'details' ? `${createRelated}${renderRelatedList(relationKey, related[relationKey])}` : `<div class="detail-grid">${visibleDetailFields.map(([key, label]) => `<div class="detail-field"><dt>${label}</dt><dd>${renderDetailValue(key, eventRecord[key])}</dd></div>`).join('')}</div>`;
     const isOwnWish = type === 'wishes' && currentUser ? isWishOwnedByUser(record, currentUser.id) : false;
+    const isRequestParticipant = type === 'requests' && currentUser && (record.sender === currentUser.id || record.mottaker === currentUser.id);
+    const canProposeNewTime = isRequestParticipant && record.status !== 'Avslått';
+    const pendingTimeProposal = type === 'requests' ? record.pendingTimeProposal : null;
+    const canRespondToTimeProposal = Boolean(canProposeNewTime && pendingTimeProposal && pendingTimeProposal.toUserId === currentUser.id);
+    const requestActionButtons = [];
+    if (type === 'requests' && currentUser) {
+      if (record.mottaker === currentUser.id && record.status === 'Under behandling') {
+        requestActionButtons.push('<button class="button" type="button" data-approve-request-detail>Godkjenn forespørsel</button>');
+        requestActionButtons.push('<button class="button button-secondary" type="button" data-reject-request-detail>Avslå forespørsel</button>');
+      }
+      if (canProposeNewTime) requestActionButtons.push('<button class="button button-secondary" type="button" data-open-reschedule-form>Foreslå nytt tidspunkt</button>');
+    }
     const requestAction = type === 'horses'
       ? `<a class="button" href="#new-request/horse/${encodeURIComponent(id)}/requests">Legg til forespørsel</a>`
       : type === 'wishes'
         ? (isOwnWish ? '' : `<a class="button" href="#new-request/wish/${encodeURIComponent(id)}/requests">Send forespørsel</a>`)
-        : type === 'requests' && currentUser && record.mottaker === currentUser.id && record.status === 'Under behandling'
-          ? '<div class="inline-actions"><button class="button" type="button" data-approve-request-detail>Godkjenn forespørsel</button><button class="button button-secondary" type="button" data-reject-request-detail>Avslå forespørsel</button></div>'
+        : type === 'requests' && currentUser
+          ? (requestActionButtons.length ? `<div class="inline-actions">${requestActionButtons.join('')}</div>` : '')
           : '';
     const eventAction = type === 'events' ? currentUser ? `<button class="button" type="button" data-event-participation>${participants.includes(currentUser.id) ? 'Forlat arrangement' : 'Bli med'}</button>` : '<a class="button" href="#login">Logg inn for å delta</a>' : '';
     const primaryAction = requestAction || eventAction;
-    const editAction = canEditRecord(type, record, currentUser) ? `<a class="button button-secondary" href="#edit/${singular[type]}/${encodeURIComponent(id)}${tab ? `/${tab}` : ''}">Endre</a>` : '';
+    const editAction = type !== 'requests' && canEditRecord(type, record, currentUser) ? `<a class="button button-secondary" href="#edit/${singular[type]}/${encodeURIComponent(id)}${tab ? `/${tab}` : ''}">Endre</a>` : '';
     const detailEditAction = editAction ? `<div class="form-actions">${editAction}</div>` : '';
     const statusBadge = type !== 'wishes' && record.status ? `<span class="badge badge-large badge-${record.status.toLowerCase().replaceAll(' ', '-')}">${escapeHtml(record.status)}</span>` : record.active !== undefined ? `<span class="badge badge-large">${record.active ? 'Aktiv' : 'Inaktiv'}</span>` : '';
-    app.innerHTML = `<a class="back-link" href="#${type}">← Til ${labels[type].toLowerCase()}</a><section class="record-profile-header ${supportsImage ? '' : 'record-profile-header-no-media'}">${profileMedia}<div class="record-header"><div><p class="eyebrow">${labels[type]}</p><h1>${escapeHtml(record.name)}</h1>${primaryAction ? `<div class="record-primary-action">${primaryAction}</div>` : ''}</div><div class="record-actions">${statusBadge}</div></div></section>${tabs.length ? `<nav class="inner-tabs" aria-label="Relaterte poster">${tabs.map(([value, label]) => `<a class="${(tab || 'details') === value ? 'is-active' : ''}" href="#${singular[type]}/${id}${value === 'details' ? '' : `/${value}`}"\>${label}</a>`).join('')}</nav>` : ''}<section class="detail-panel">${body}${detailEditAction}</section>`;
+    const requestRescheduleSection = type === 'requests' && currentUser
+      ? `<section class="detail-panel"><h3>Foreslått tidspunkt</h3><div class="detail-grid"><div class="detail-field"><dt>Gjeldende dato</dt><dd>${escapeHtml(formatValue('date', record.date))}</dd></div><div class="detail-field"><dt>Gjeldende tid</dt><dd>${escapeHtml(record.startTime || '—')}</dd></div></div>${pendingTimeProposal ? `<div class="empty-state compact"><h3>${escapeHtml(getUserName(pendingTimeProposal.fromUserId))} foreslår nytt tidspunkt</h3><p>${escapeHtml(formatValue('date', pendingTimeProposal.date))} kl. ${escapeHtml(pendingTimeProposal.startTime)}${pendingTimeProposal.durationHours ? ` · ${escapeHtml(String(pendingTimeProposal.durationHours))} timer` : ''}${pendingTimeProposal.comment ? `<br>${escapeHtml(pendingTimeProposal.comment)}` : ''}</p>${canRespondToTimeProposal ? '<div class="inline-actions"><button class="button" type="button" data-approve-reschedule>Godkjenn ny tid</button><button class="button button-secondary" type="button" data-reject-reschedule>Avslå ny tid</button><button class="button button-secondary" type="button" data-open-reschedule-form>Foreslå nytt tidspunkt</button></div>' : '<p>Venter på svar fra motpart.</p>'}</div>` : '<p>Ingen aktive forslag til nytt tidspunkt.</p>'}${canProposeNewTime ? `<form id="reschedule-form" class="profile-form" hidden><div class="form-grid"><label><span>Ny dato</span><input name="date" type="date" required value="${escapeHtml(record.date || '')}"></label><label><span>Nytt tidspunkt</span><input name="startTime" type="time" required value="${escapeHtml(record.startTime || '')}"></label><label><span>Varighet (timer)</span><input name="durationHours" type="number" min="0.5" max="12" step="0.5" value="${escapeHtml(String(record.durationHours || 1))}"></label><label class="form-wide"><span>Kommentar</span><textarea name="comment" rows="3" placeholder="For eksempel: passer dette bedre?">${escapeHtml(pendingTimeProposal?.toUserId === currentUser.id ? '' : (pendingTimeProposal?.comment || ''))}</textarea></label></div><div class="form-actions"><button class="button" type="submit">Send forslag</button><button class="button button-secondary" type="button" data-cancel-reschedule>Avbryt</button></div><p class="form-error" role="alert" hidden></p></form>` : ''}</section>`
+      : '';
+    app.innerHTML = `<a class="back-link" href="#${type}">← Til ${labels[type].toLowerCase()}</a><section class="record-profile-header ${supportsImage ? '' : 'record-profile-header-no-media'}">${profileMedia}<div class="record-header"><div><p class="eyebrow">${labels[type]}</p><h1>${escapeHtml(record.name)}</h1>${primaryAction ? `<div class="record-primary-action">${primaryAction}</div>` : ''}</div><div class="record-actions">${statusBadge}</div></div></section>${tabs.length ? `<nav class="inner-tabs" aria-label="Relaterte poster">${tabs.map(([value, label]) => `<a class="${(tab || 'details') === value ? 'is-active' : ''}" href="#${singular[type]}/${id}${value === 'details' ? '' : `/${value}`}"\>${label}</a>`).join('')}</nav>` : ''}<section class="detail-panel">${body}${detailEditAction}</section>${requestRescheduleSection}`;
     const eventParticipation = document.querySelector('[data-event-participation]');
     if (eventParticipation) eventParticipation.addEventListener('click', () => { toggleEventParticipant(id, currentUser.id); renderDetail(type, id, tab); });
     const approveRequestDetail = document.querySelector('[data-approve-request-detail]');
@@ -751,6 +779,68 @@
     if (rejectRequestDetail) rejectRequestDetail.addEventListener('click', () => {
       updateRequestStatus(id, 'Avslått');
       addNotification(record.sender, `Forespørselen ${record.name} ble avslått.`, `#request/${encodeURIComponent(record.id)}`);
+      renderDetail(type, id, tab);
+      updateAuthAction();
+    });
+    const openRescheduleForm = document.querySelectorAll('[data-open-reschedule-form]');
+    openRescheduleForm.forEach((button) => button.addEventListener('click', () => {
+      const form = document.querySelector('#reschedule-form');
+      if (!form) return;
+      form.hidden = false;
+      form.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }));
+    const cancelReschedule = document.querySelector('[data-cancel-reschedule]');
+    if (cancelReschedule) cancelReschedule.addEventListener('click', () => {
+      const form = document.querySelector('#reschedule-form');
+      if (!form) return;
+      form.hidden = true;
+    });
+    const rescheduleForm = document.querySelector('#reschedule-form');
+    if (rescheduleForm && currentUser && isRequestParticipant) rescheduleForm.addEventListener('submit', (event) => {
+      event.preventDefault();
+      const values = Object.fromEntries(new FormData(event.currentTarget));
+      const message = event.currentTarget.querySelector('.form-error');
+      if (!values.date || !values.startTime) {
+        message.textContent = 'Velg både dato og tidspunkt.';
+        message.hidden = false;
+        return;
+      }
+      const counterpartId = record.sender === currentUser.id ? record.mottaker : record.sender;
+      record.pendingTimeProposal = {
+        fromUserId: currentUser.id,
+        toUserId: counterpartId,
+        date: String(values.date).trim(),
+        startTime: String(values.startTime).trim(),
+        durationHours: Number(values.durationHours) || record.durationHours || 1,
+        comment: String(values.comment || '').trim(),
+        createdAt: new Date().toISOString()
+      };
+      syncLocalType('requests');
+      addNotification(counterpartId, `${currentUser.name} foreslo nytt tidspunkt for ${record.name}.`, `#request/${encodeURIComponent(record.id)}`);
+      renderDetail(type, id, tab);
+      updateAuthAction();
+    });
+    const approveReschedule = document.querySelector('[data-approve-reschedule]');
+    if (approveReschedule && currentUser && canRespondToTimeProposal) approveReschedule.addEventListener('click', () => {
+      const proposal = record.pendingTimeProposal;
+      if (!proposal) return;
+      record.date = proposal.date;
+      record.startTime = proposal.startTime;
+      record.durationHours = proposal.durationHours;
+      record.pendingTimeProposal = null;
+      syncLocalType('requests');
+      syncActivityFromRequest(record);
+      addNotification(proposal.fromUserId, `${currentUser.name} godkjente nytt tidspunkt for ${record.name}.`, `#request/${encodeURIComponent(record.id)}`);
+      renderDetail(type, id, tab);
+      updateAuthAction();
+    });
+    const rejectReschedule = document.querySelector('[data-reject-reschedule]');
+    if (rejectReschedule && currentUser && canRespondToTimeProposal) rejectReschedule.addEventListener('click', () => {
+      const proposal = record.pendingTimeProposal;
+      if (!proposal) return;
+      record.pendingTimeProposal = null;
+      syncLocalType('requests');
+      addNotification(proposal.fromUserId, `${currentUser.name} avslo nytt tidspunkt for ${record.name}.`, `#request/${encodeURIComponent(record.id)}`);
       renderDetail(type, id, tab);
       updateAuthAction();
     });
