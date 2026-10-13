@@ -575,7 +575,9 @@
       }
       if (type === 'horses') {
         const currentUser = getCurrentUser();
-        if (!currentUser || !isAdmin(currentUser)) {
+        const horseRecord = recordId ? getRecordById('horses', recordId) : null;
+        const canAccessOwnHorse = Boolean(currentUser && horseRecord && horseRecord.ownerId === currentUser.id);
+        if (!currentUser || (!isAdmin(currentUser) && !canAccessOwnHorse)) {
           window.location.hash = '#home';
           return;
         }
