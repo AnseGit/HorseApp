@@ -1,12 +1,6 @@
 (function () {
   const data = window.HesteVennData;
   const app = document.querySelector('#app');
-  const localStorageKeys = Object.fromEntries(Object.keys(data).map((type) => [type, `hestevenn-local-${type}`]));
-  const currentUserKey = 'hestevenn-current-user-id';
-  const profileImagesKey = 'hestevenn-profile-images';
-  const eventAttendanceKey = 'hestevenn-event-attendance';
-  const notificationKey = 'hestevenn-notifications';
-  const recordEditsKey = 'hestevenn-record-edits';
   const config = window.HesteVennConfig;
   if (!config) {
     console.error('HesteVennConfig mangler. Last inn app-config.js før script.js.');
@@ -18,6 +12,11 @@
     return;
   }
   const recordIndex = recordIndexFactory(data);
+  const persistenceFactory = window.HesteVennPersistence;
+  if (!persistenceFactory) {
+    console.error('HesteVennPersistence mangler. Last inn data-persistence.js før script.js.');
+    return;
+  }
 
   const {
     idPrefixes,
@@ -32,112 +31,6 @@
   } = config;
   const state = { search: '', selectedFilters: {}, wishFlow: {} };
   const profilValues = ['Admin', 'Premium User', 'User'];
-  const searchDebounceMs = 180;
-  const searchCacheByType = new Map();
-  const dirtySearchTypes = new Set(Object.keys(data));
-
-  function loadLocalRecords() {
-    Object.keys(localStorageKeys).forEach((type) => {
-      let loadedAny = false;
-      try {
-        const records = JSON.parse(localStorage.getItem(localStorageKeys[type]) || '[]');
-        if (Array.isArray(records)) {
-          records
-            .filter((record) => record && record.id && record.name)
-            .forEach((record) => {
-              data[type].push(record);
-              recordIndex.upsert(type, record);
-              loadedAny = true;
-            });
-        }
-      } catch (error) {
-        console.warn(`Kunne ikke laste lokale ${labels[type].toLowerCase()}.`, error);
-      }
-      if (loadedAny) markSearchCacheDirty(type);
-    });
-  }
-
-  function getSavedRecordEdits() {
-    try { return JSON.parse(localStorage.getItem(recordEditsKey) || '{}'); }
-    catch (error) { return {}; }
-  }
-
-  function saveRecordEdit(type, record) {
-    const edits = getSavedRecordEdits();
-    if (!edits[type]) edits[type] = {};
-    edits[type][record.id] = record;
-    localStorage.setItem(recordEditsKey, JSON.stringify(edits));
-  }
-
-  function applySavedRecordEdits() {
-    const edits = getSavedRecordEdits();
-    Object.entries(edits).forEach(([type, recordsById]) => {
-      if (!Array.isArray(data[type])) return;
-      let changed = false;
-      Object.entries(recordsById || {}).forEach(([id, savedRecord]) => {
-        const existing = recordIndex.get(type, id);
-        if (existing) {
-          Object.assign(existing, savedRecord);
-          recordIndex.upsert(type, existing);
-          changed = true;
-        }
-      });
-      if (changed) markSearchCacheDirty(type);
-    });
-  }
-
-  function saveLocalRecord(type, record) {
-    const prefix = `${idPrefixes[type]}-LOCAL-`;
-    const localRecords = data[type].filter((item) => item.id.startsWith(prefix));
-    localStorage.setItem(localStorageKeys[type], JSON.stringify([...localRecords, record]));
-    data[type].push(record);
-    recordIndex.upsert(type, record);
-    markSearchCacheDirty(type);
-  }
-
-  function markSearchCacheDirty(type) {
-    if (!type) return;
-    dirtySearchTypes.add(type);
-  }
-
-  function valueToSearchText(value) {
-    if (value === null || value === undefined) return '';
-    if (Array.isArray(value)) return value.map((part) => valueToSearchText(part)).join(' ');
-    if (typeof value === 'object') return Object.values(value).map((part) => valueToSearchText(part)).join(' ');
-    return String(value);
-  }
-
-  function buildRecordSearchText(record) {
-    return Object.values(record || {}).map((value) => valueToSearchText(value)).join(' ').toLowerCase();
-  }
-
-  function ensureSearchCacheForType(type) {
-    if (!searchCacheByType.has(type) || dirtySearchTypes.has(type)) {
-      const index = new Map();
-      (data[type] || []).forEach((record) => {
-        if (!record?.id) return;
-        index.set(record.id, buildRecordSearchText(record));
-      });
-      searchCacheByType.set(type, index);
-      dirtySearchTypes.delete(type);
-    }
-  }
-
-  function getRecordSearchText(type, record) {
-    ensureSearchCacheForType(type);
-    const index = searchCacheByType.get(type);
-    if (!record?.id || !index) return '';
-    if (!index.has(record.id)) index.set(record.id, buildRecordSearchText(record));
-    return index.get(record.id) || '';
-  }
-
-  function debounce(callback, waitMs) {
-    let timerId = 0;
-    return (...args) => {
-      window.clearTimeout(timerId);
-      timerId = window.setTimeout(() => callback(...args), waitMs);
-    };
-  }
 
   function generateNextRequestName() {
     const maxSequence = data.requests.reduce((max, request) => {
@@ -147,37 +40,6 @@
       return Number.isFinite(sequence) ? Math.max(max, sequence) : max;
     }, 0);
     return `FS-${String(maxSequence + 1).padStart(5, '0')}`;
-  }
-
-  function getProfileImages() {
-    try { return JSON.parse(localStorage.getItem(profileImagesKey) || '{}'); }
-    catch (error) { return {}; }
-  }
-
-  function getProfileImage(record) {
-    return getProfileImages()[record.id] || record.imageUrl || '';
-  }
-
-  function saveProfileImage(id, imageData) {
-    const images = getProfileImages();
-    images[id] = imageData;
-    localStorage.setItem(profileImagesKey, JSON.stringify(images));
-  }
-
-  function getEventParticipants(record) {
-    let attendance = {};
-    try { attendance = JSON.parse(localStorage.getItem(eventAttendanceKey) || '{}'); } catch (error) { attendance = {}; }
-    return attendance[record.id] || record.participantIds || [];
-  }
-
-  function toggleEventParticipant(eventId, userId) {
-    let attendance = {};
-    try { attendance = JSON.parse(localStorage.getItem(eventAttendanceKey) || '{}'); } catch (error) { attendance = {}; }
-    const record = getRecordById('events', eventId);
-    const participants = new Set(attendance[eventId] || record.participantIds || []);
-    if (participants.has(userId)) participants.delete(userId); else participants.add(userId);
-    attendance[eventId] = [...participants];
-    localStorage.setItem(eventAttendanceKey, JSON.stringify(attendance));
   }
 
   function compressImage(file) {
@@ -201,12 +63,6 @@
       image.onerror = () => { URL.revokeObjectURL(objectUrl); reject(new Error('Bildet kunne ikke leses.')); };
       image.src = objectUrl;
     });
-  }
-
-  function getCurrentUser() {
-    const user = getRecordById('users', localStorage.getItem(currentUserKey));
-    if (!user) localStorage.removeItem(currentUserKey);
-    return user;
   }
 
   function getProfil(user) {
@@ -274,46 +130,6 @@
 
   function wishesOwnedByUser(userId) {
     return data.wishes.filter((wish) => isWishOwnedByUser(wish, userId));
-  }
-
-  function getNotifications() {
-    try { return JSON.parse(localStorage.getItem(notificationKey) || '{}'); }
-    catch (error) { return {}; }
-  }
-
-  function saveNotifications(notifications) {
-    localStorage.setItem(notificationKey, JSON.stringify(notifications));
-  }
-
-  function getUserNotifications(userId) {
-    return getNotifications()[userId] || [];
-  }
-
-  function addNotification(userId, message, link = '#requests') {
-    if (!userId) return;
-    const notifications = getNotifications();
-    const userNotifications = notifications[userId] || [];
-    userNotifications.unshift({ id: `NOTIFICATION-${Date.now()}`, message, link, read: false, createdAt: new Date().toISOString() });
-    notifications[userId] = userNotifications.slice(0, 50);
-    saveNotifications(notifications);
-  }
-
-  function markNotificationsRead(userId) {
-    if (!userId) return;
-    const notifications = getNotifications();
-    notifications[userId] = (notifications[userId] || []).map((notification) => ({ ...notification, read: true }));
-    saveNotifications(notifications);
-  }
-
-  function unreadNotificationCount(userId) {
-    return getUserNotifications(userId).filter((notification) => !notification.read).length;
-  }
-
-  function syncLocalType(type) {
-    const prefix = `${idPrefixes[type]}-LOCAL-`;
-    const localRecords = data[type].filter((item) => item.id.startsWith(prefix));
-    localStorage.setItem(localStorageKeys[type], JSON.stringify(localRecords));
-    markSearchCacheDirty(type);
   }
 
   function updateRequestStatus(requestId, status) {
@@ -506,41 +322,136 @@
     matchesFilters
   } = helperFactory({ data, singular, state, recordIndex });
 
-  function getFilteredRecordsForList(type) {
-    const query = state.search.toLowerCase().trim();
-    return data[type].filter((record) => matchesFilters(type, record) && (!query || getRecordSearchText(type, record).includes(query)));
+  const listViewsFactory = window.HesteVennListViews;
+  if (!listViewsFactory) {
+    console.error('HesteVennListViews mangler. Last inn list-views.js før script.js.');
+    return;
   }
 
-  function renderObjectListRows(type) {
-    const body = document.querySelector('#record-table-body');
-    const count = document.querySelector('#list-count');
-    const emptyState = document.querySelector('#record-empty-state');
-    if (!body || !count || !emptyState) return;
+  const {
+    markSearchCacheDirty,
+    renderObjectList
+  } = listViewsFactory({
+    app,
+    data,
+    state,
+    labels,
+    singular,
+    descriptions,
+    columns,
+    filters,
+    getCurrentUser,
+    canCreateRecord,
+    escapeHtml,
+    uniqueValues,
+    renderCell,
+    matchesFilters,
+    searchDebounceMs: 180
+  });
 
-    const records = getFilteredRecordsForList(type);
-    const rows = records.map((record) => `<tr>${columns[type].map(([key]) => `<td>${renderCell(type, key, record[key], record)}</td>`).join('')}</tr>`).join('');
-    body.innerHTML = rows;
-    count.textContent = `${records.length} av ${data[type].length} poster`;
-    emptyState.hidden = records.length !== 0;
+  const {
+    loadLocalRecords,
+    saveRecordEdit,
+    applySavedRecordEdits,
+    saveLocalRecord,
+    syncLocalType,
+    getCurrentUser: getCurrentUserFromPersistence,
+    setCurrentUserId,
+    clearCurrentUser,
+    getProfileImage,
+    saveProfileImage,
+    getEventParticipants,
+    toggleEventParticipant,
+    getUserNotifications,
+    addNotification,
+    markNotificationsRead,
+    unreadNotificationCount
+  } = persistenceFactory({ data, labels, idPrefixes, recordIndex, onTypeChanged: markSearchCacheDirty });
+
+  function getCurrentUser() {
+    return getCurrentUserFromPersistence();
   }
 
-  function renderObjectList(type) {
-    const currentUser = getCurrentUser();
-    const filterMarkup = (filters[type] || []).map(([key, label]) => `<label class="filter"><span>${label}</span><select data-filter-key="${key}"><option value="">${label}</option>${uniqueValues(type, key).map((value) => `<option value="${escapeHtml(value)}" ${state.selectedFilters[key] === value ? 'selected' : ''}>${escapeHtml(value)}</option>`).join('')}</select></label>`).join('');
-    const tableHead = columns[type].map(([, label]) => `<th scope="col">${label}</th>`).join('');
-    const createAction = canCreateRecord(type, currentUser)
-      ? `<a class="button" href="#new-${singular[type]}">+ Legg Til</a>`
-      : '';
-    app.innerHTML = `<section class="page-heading"><div><p class="eyebrow">Objekt · ${labels[type]}</p><h1>${labels[type]}</h1><p class="lede">${descriptions[type]}</p></div><div class="page-actions">${createAction}</div></section><section class="list-panel"><div class="list-toolbar"><div><strong id="list-count">0 av ${data[type].length} poster</strong><span class="toolbar-note"> · lokale data</span></div><label class="search-field"><span class="sr-only">Søk i ${labels[type]}</span><span aria-hidden="true">⌕</span><input type="search" id="record-search" placeholder="Søk i poster" value="${escapeHtml(state.search)}"></label><div class="filters">${filterMarkup}</div></div><div class="table-wrap"><table><thead><tr>${tableHead}</tr></thead><tbody id="record-table-body"></tbody></table></div><div class="empty-state" id="record-empty-state" hidden><span aria-hidden="true">⌕</span><h2>Ingen poster funnet</h2><p>Prøv et annet søk eller fjern et filter.</p></div></section>`;
-    bindListEvents(type);
-    renderObjectListRows(type);
+  const detailViewFactory = window.HesteVennDetailView;
+  if (!detailViewFactory) {
+    console.error('HesteVennDetailView mangler. Last inn detail-view.js før script.js.');
+    return;
   }
+
+  const {
+    renderDetail
+  } = detailViewFactory({
+    app,
+    data,
+    singular,
+    labels,
+    detailFields,
+    getRecordById,
+    getUserName,
+    lookupLink,
+    escapeHtml,
+    formatValue,
+    getCurrentUser,
+    canCreateRecord,
+    canEditRecord,
+    isWishOwnedByUser,
+    getProfileImage,
+    saveProfileImage,
+    getEventParticipants,
+    toggleEventParticipant,
+    updateRequestStatus,
+    createActivityFromApprovedRequest,
+    addNotification,
+    updateAuthAction,
+    syncLocalType,
+    syncActivityFromRequest,
+    compressImage
+  });
+
+  const formsWishFlowFactory = window.HesteVennFormsWishFlow;
+  if (!formsWishFlowFactory) {
+    console.error('HesteVennFormsWishFlow mangler. Last inn forms-wish-flow.js før script.js.');
+    return;
+  }
+
+  const {
+    renderCreateWishFlowStep1,
+    renderCreateWishFlowStep2,
+    renderCreateWishFlowStep3,
+    renderEditForm,
+    renderCreateForm
+  } = formsWishFlowFactory({
+    app,
+    data,
+    state,
+    idPrefixes,
+    singular,
+    createLabels,
+    createFields,
+    getCurrentUser,
+    canCreateRecord,
+    canEditRecord,
+    isAdmin,
+    getProfil,
+    getHorseName,
+    getRecordById,
+    escapeHtml,
+    compressImage,
+    saveLocalRecord,
+    saveRecordEdit,
+    syncLocalType,
+    saveProfileImage,
+    addNotification,
+    generateNextRequestName,
+    updateNavigation
+  });
+
   function renderLogin() {
     const currentUser = getCurrentUser();
     app.innerHTML = `<a class="back-link" href="#home">← Til Min Side</a><section class="page-heading"><div><p class="eyebrow">Lokal innlogging</p><h1>Logg inn</h1><p class="lede">Velg en bruker. Passord er ikke nødvendig i denne prototypen.</p></div></section><form class="profile-form detail-panel" id="login-form"><div class="form-grid"><label class="form-wide"><span>Bruker</span><select name="userId" required><option value="">Velg bruker</option>${data.users.filter((user) => user.active).map((user) => `<option value="${escapeHtml(user.id)}" ${currentUser && currentUser.id === user.id ? 'selected' : ''}>${escapeHtml(user.name)} · ${escapeHtml(user.location)}</option>`).join('')}</select></label></div><div class="form-actions"><a class="button button-secondary" href="#home">Avbryt</a><button class="button" type="submit">Logg inn</button></div></form>`;
     document.querySelector('#login-form').addEventListener('submit', (event) => {
       event.preventDefault();
-      localStorage.setItem(currentUserKey, new FormData(event.currentTarget).get('userId'));
+      setCurrentUserId(new FormData(event.currentTarget).get('userId'));
       updateAuthAction();
       window.location.hash = '#home';
     });
@@ -554,473 +465,6 @@
     markNotificationsRead(currentUser.id);
     updateAuthAction();
     updateNavigation('');
-  }
-  function createWishFlowDefaults() {
-    const currentUser = getCurrentUser();
-    return {
-      ønsketype: '',
-      location: currentUser?.location || '',
-      address: '',
-      erfaring: 'Nybegynner',
-      aktivitetstype: 'Ukentlig',
-      størrelsePåHest: 'Mellom',
-      ridestil: 'Tur',
-      qualifications: '',
-      comment: '',
-      horseId: '',
-      status: 'Aktiv'
-    };
-  }
-  function getWishFlowState() {
-    if (!Object.keys(state.wishFlow).length) state.wishFlow = createWishFlowDefaults();
-    return state.wishFlow;
-  }
-  function renderCreateWishFlowStep1() {
-    const currentUser = getCurrentUser();
-    if (!canCreateRecord('wishes', currentUser)) {
-      window.location.hash = '#login';
-      return;
-    }
-    state.wishFlow = createWishFlowDefaults();
-    app.innerHTML = `<a class="back-link" href="#home">← Til Min Side</a><section class="page-heading"><div><p class="eyebrow">Opprett Ønske · 1 av 3</p><h1>Velg ønsketype</h1><p class="lede">Start med å fortelle om du ønsker å ri, ønsker en rytter eller ønsker hest på fôr.</p></div></section><form class="profile-form detail-panel" id="wish-flow-step-1"><div class="form-grid"><label class="form-wide"><span>Ønsketype</span><select name="ønsketype" required><option value="">Velg ønsketype</option><option value="Ønsker å Ri">Ønsker å Ri</option><option value="Ønsker en rytter">Ønsker en rytter</option><option value="Hest på fôr">Hest på fôr</option></select></label></div><div class="form-actions"><a class="button button-secondary" href="#home">Avbryt</a><button class="button" type="submit">Neste</button></div></form>`;
-    document.querySelector('#wish-flow-step-1').addEventListener('submit', (event) => {
-      event.preventDefault();
-      const values = Object.fromEntries(new FormData(event.currentTarget));
-      state.wishFlow = { ...createWishFlowDefaults(), ...values };
-      window.location.hash = '#create-wish/detaljer';
-    });
-    updateNavigation('');
-  }
-  function renderCreateWishFlowStep2() {
-    const flow = getWishFlowState();
-    if (!flow.ønsketype) {
-      window.location.hash = '#create-wish';
-      return;
-    }
-    const currentUser = getCurrentUser();
-    const needsHorse = flow.ønsketype === 'Ønsker en rytter';
-    const ownHorses = currentUser ? data.horses.filter((horse) => horse.ownerId === currentUser.id) : [];
-    const ownHorseIds = new Set(ownHorses.map((horse) => horse.id));
-    const horseField = needsHorse
-      ? `<label><span>Hest</span><select name="horseId" required><option value="">${ownHorses.length ? 'Velg hest' : 'Ingen hester knyttet til profilen din'}</option>${ownHorses.map((horse) => `<option value="${escapeHtml(horse.id)}" ${flow.horseId === horse.id ? 'selected' : ''}>${escapeHtml(horse.name)} · ${escapeHtml(horse.location)}</option>`).join('')}</select></label>`
-      : '';
-    app.innerHTML = `<a class="back-link" href="#create-wish">← Tilbake</a><section class="page-heading"><div><p class="eyebrow">Opprett Ønske · 2 av 3</p><h1>${escapeHtml(flow.ønsketype)}</h1><p class="lede">Svar på spørsmålene under for å opprette ønsket ditt.</p></div></section><form class="profile-form detail-panel" id="wish-flow-step-2"><div class="form-grid"><label><span>Fylke</span><input name="location" required value="${escapeHtml(flow.location)}"></label><label><span>Adresse</span><input name="address"${needsHorse ? ' required' : ''} value="${escapeHtml(flow.address)}" placeholder="For eksempel Stallveien 12, 4630 Kristiansand"></label><label><span>Erfaring</span><select name="erfaring" required><option value="Nybegynner" ${flow.erfaring === 'Nybegynner' ? 'selected' : ''}>Nybegynner</option><option value="Lett øvet" ${flow.erfaring === 'Lett øvet' ? 'selected' : ''}>Lett øvet</option><option value="Erfaren" ${flow.erfaring === 'Erfaren' ? 'selected' : ''}>Erfaren</option><option value="Profesjonell" ${flow.erfaring === 'Profesjonell' ? 'selected' : ''}>Profesjonell</option></select></label><label><span>Aktivitetstype</span><select name="aktivitetstype" required><option value="Engangstilfelle" ${flow.aktivitetstype === 'Engangstilfelle' ? 'selected' : ''}>Engangstilfelle</option><option value="Månedlig" ${flow.aktivitetstype === 'Månedlig' ? 'selected' : ''}>Månedlig</option><option value="Ukentlig" ${flow.aktivitetstype === 'Ukentlig' ? 'selected' : ''}>Ukentlig</option><option value="Daglig" ${flow.aktivitetstype === 'Daglig' ? 'selected' : ''}>Daglig</option><option value="Periode" ${flow.aktivitetstype === 'Periode' ? 'selected' : ''}>Periode</option></select></label><label><span>Størrelse på hest</span><select name="størrelsePåHest" required><option value="Liten" ${flow.størrelsePåHest === 'Liten' ? 'selected' : ''}>Liten</option><option value="Mellom" ${flow.størrelsePåHest === 'Mellom' ? 'selected' : ''}>Mellom</option><option value="Stor" ${flow.størrelsePåHest === 'Stor' ? 'selected' : ''}>Stor</option></select></label><label><span>Ridestil</span><select name="ridestil" required><option value="Tur" ${flow.ridestil === 'Tur' ? 'selected' : ''}>Tur</option><option value="Dressur" ${flow.ridestil === 'Dressur' ? 'selected' : ''}>Dressur</option><option value="Sprang" ${flow.ridestil === 'Sprang' ? 'selected' : ''}>Sprang</option><option value="Fôr" ${flow.ridestil === 'Fôr' ? 'selected' : ''}>Fôr</option></select></label>${horseField}<label class="form-wide"><span>Kvalifikasjoner</span><input name="qualifications" value="${escapeHtml(flow.qualifications)}" placeholder="For eksempel Trygg på tur, Grunnleggende håndtering"></label><label class="form-wide"><span>Kommentar</span><textarea name="comment" rows="5">${escapeHtml(flow.comment)}</textarea></label></div><div class="form-actions"><a class="button button-secondary" href="#create-wish">Tilbake</a><button class="button" type="submit">Opprett ønske</button></div><p class="form-error" role="alert" hidden></p></form>`;
-    const buildWishAutoName = (wishType, currentUser, selectedHorseId, formValues) => {
-      const firstName = String(currentUser?.name || '').trim().split(/\s+/).filter(Boolean)[0] || 'Bruker';
-      const horseName = selectedHorseId ? getHorseName(selectedHorseId) : '';
-      const ridestil = String(formValues.ridestil || '').trim().toLowerCase();
-      const erfaring = String(formValues.erfaring || '').trim().toLowerCase();
-
-      if (wishType === 'Ønsker en rytter') {
-        return `${horseName || 'Hest'} ønsker ${erfaring || 'erfaren'} rytter`;
-      }
-      if (wishType === 'Hest på fôr') {
-        return `${firstName} ønsker ${erfaring || 'erfaren'} hest på fôr`;
-      }
-      return `${firstName} ønsker å ri ${ridestil || 'tur'}`;
-    };
-    document.querySelector('#wish-flow-step-2').addEventListener('submit', (event) => {
-      event.preventDefault();
-      const form = event.currentTarget;
-      const values = Object.fromEntries(new FormData(form));
-      const wishType = flow.ønsketype;
-      const horseId = wishType === 'Ønsker en rytter' ? (values.horseId || '').trim() : '';
-      const userId = wishType === 'Ønsker en rytter' ? '' : (currentUser?.id || '');
-      const message = form.querySelector('.form-error');
-      if (wishType === 'Ønsker en rytter' && !horseId) {
-        message.textContent = 'Velg hest for ønsket ditt.';
-        message.hidden = false;
-        return;
-      }
-      if (wishType === 'Ønsker en rytter' && !ownHorseIds.has(horseId)) {
-        message.textContent = 'Du kan bare velge hester knyttet til din profil.';
-        message.hidden = false;
-        return;
-      }
-      const autoName = buildWishAutoName(wishType, currentUser, horseId, values);
-      const record = {
-        id: `${idPrefixes.wishes}-LOCAL-${Date.now()}`,
-        name: autoName,
-        userId,
-        horseId,
-        location: values.location.trim(),
-        address: String(values.address || '').trim(),
-        størrelsePåHest: values.størrelsePåHest,
-        erfaring: values.erfaring,
-        ønsketype: wishType,
-        aktivitetstype: values.aktivitetstype,
-        ridestil: values.ridestil,
-        status: 'Aktiv',
-        qualifications: String(values.qualifications || '').split(',').map((value) => value.trim()).filter(Boolean),
-        comment: String(values.comment || '').trim()
-      };
-      saveLocalRecord('wishes', record);
-      state.wishFlow = createWishFlowDefaults();
-      window.location.hash = '#home';
-    });
-    updateNavigation('');
-  }
-  function renderCreateWishFlowStep3(wishId) {
-    const record = getRecordById('wishes', wishId);
-    const wishLink = record ? `#wish/${encodeURIComponent(record.id)}` : '#wishes';
-    app.innerHTML = `<a class="back-link" href="#home">← Til Min Side</a><section class="page-heading"><div><p class="eyebrow">Opprett Ønske · 3 av 3</p><h1>Ønsket ditt er opprettet</h1><p class="lede">Flott! Nå kan andre hestevenner finne ønsket ditt og ta kontakt for en trygg og god rideopplevelse.</p></div></section><section class="detail-panel"><div class="empty-state compact"><span aria-hidden="true">✦</span><h3>Klar for matching</h3><p>Du kan se ønsket ditt med en gang eller gå tilbake til oversikten over alle ønsker.</p></div><div class="form-actions"><a class="button button-secondary" href="#wishes">Se alle ønsker</a><a class="button" href="${wishLink}">Se ønsket ditt</a></div></section>`;
-    updateNavigation('');
-  }
-  function relationPresets(type, contextType, contextId) {
-    if (!contextType || !contextId) {
-      const currentUser = getCurrentUser();
-      return type === 'events' && currentUser ? { organizerId: currentUser.id } : {};
-    }
-    if (contextType === 'users') return type === 'horses' ? { ownerId: contextId } : type === 'wishes' ? { userId: contextId, horseId: '' } : { userId: contextId };
-    if (contextType === 'wishes') {
-      const wish = getRecordById('wishes', contextId);
-      const currentUser = getCurrentUser();
-      const receiverId = wish?.userId || (wish?.horseId ? getRecordById('horses', wish.horseId)?.ownerId : '');
-      if (type === 'requests') return { wishId: contextId, horseId: wish?.horseId || '', sender: currentUser?.id || '', mottaker: receiverId || '' };
-      return {};
-    }
-    if (contextType === 'horses') {
-      if (type === 'wishes') return { horseId: contextId, userId: '' };
-      if (type === 'requests') {
-        const currentUser = getCurrentUser();
-        const horse = getRecordById('horses', contextId);
-        return currentUser && ['Rytter', 'Begge'].includes(currentUser.role) ? { horseId: contextId, sender: currentUser.id, mottaker: horse?.ownerId || '' } : { horseId: contextId, mottaker: horse?.ownerId || '' };
-      }
-      return { horseId: contextId };
-    }
-    return {};
-  }
-  function renderCreateField(field, presets) {
-    const attributes = `${field.required ? ' required' : ''}${field.min !== undefined ? ` min="${field.min}"` : ''}${field.max !== undefined ? ` max="${field.max}"` : ''}${field.step !== undefined ? ` step="${field.step}"` : ''}${field.value !== undefined ? ` value="${field.value}"` : ''}${field.autocomplete ? ` autocomplete="${field.autocomplete}"` : ''}${field.placeholder ? ` placeholder="${escapeHtml(field.placeholder)}"` : ''}`;
-    const hasPreset = Object.prototype.hasOwnProperty.call(presets, field.key);
-    let control;
-    if (field.type === 'image') control = `<input name="imageFile" type="file" accept="image/jpeg,image/png,image/webp"><img class="image-preview" alt="Forhåndsvisning" hidden>`;
-    else if (field.type === 'select') control = `<select name="${field.key}"${attributes}>${field.options.map((option) => `<option value="${escapeHtml(option)}">${escapeHtml(option)}</option>`).join('')}</select>`;
-    else if (field.type === 'reference') {
-      const options = `<option value="">Velg ${field.label.toLowerCase()}</option>${data[field.source].map((record) => `<option value="${escapeHtml(record.id)}" ${hasPreset && presets[field.key] === record.id ? 'selected' : ''}>${escapeHtml(record.name)}</option>`).join('')}`;
-      control = hasPreset ? `<select disabled>${options}</select><input type="hidden" name="${field.key}" value="${escapeHtml(presets[field.key])}">` : `<select name="${field.key}"${attributes}>${options}</select>`;
-    }
-    else if (field.type === 'textarea') control = `<textarea name="${field.key}" rows="5"${attributes}></textarea>`;
-    else control = `<input name="${field.key}" type="${field.type || 'text'}"${attributes}>`;
-    return `<label class="${field.wide ? 'form-wide' : ''}"><span>${field.label}</span>${control}</label>`;
-  }
-
-  function renderEditField(field, record, isLocked = false) {
-    const value = record[field.key];
-    const isArray = field.array;
-    const normalizedValue = isArray ? (Array.isArray(value) ? value.join(', ') : '') : (value ?? '');
-    const attributes = `${field.required ? ' required' : ''}${field.min !== undefined ? ` min="${field.min}"` : ''}${field.max !== undefined ? ` max="${field.max}"` : ''}${field.step !== undefined ? ` step="${field.step}"` : ''}${field.autocomplete ? ` autocomplete="${field.autocomplete}"` : ''}${field.placeholder ? ` placeholder="${escapeHtml(field.placeholder)}"` : ''}`;
-    let control;
-    if (field.type === 'image') return '';
-    if (isLocked) {
-      if (field.type === 'reference') {
-        const labelText = normalizedValue ? getRecordById(field.source, normalizedValue)?.name || normalizedValue : '—';
-        control = `<input value="${escapeHtml(labelText)}" disabled><input type="hidden" name="${field.key}" value="${escapeHtml(normalizedValue)}">`;
-      } else if (field.type === 'select') {
-        control = `<select disabled>${field.options.map((option) => `<option value="${escapeHtml(option)}" ${String(option) === String(normalizedValue) ? 'selected' : ''}>${escapeHtml(option)}</option>`).join('')}</select><input type="hidden" name="${field.key}" value="${escapeHtml(normalizedValue)}">`;
-      } else {
-        control = `<input value="${escapeHtml(normalizedValue)}" disabled><input type="hidden" name="${field.key}" value="${escapeHtml(normalizedValue)}">`;
-      }
-      return `<label class="${field.wide ? 'form-wide' : ''}"><span>${field.label}</span>${control}</label>`;
-    }
-    if (field.type === 'select') {
-      control = `<select name="${field.key}"${attributes}>${field.options.map((option) => `<option value="${escapeHtml(option)}" ${String(option) === String(normalizedValue) ? 'selected' : ''}>${escapeHtml(option)}</option>`).join('')}</select>`;
-    } else if (field.type === 'reference') {
-      const options = `<option value="">Velg ${field.label.toLowerCase()}</option>${data[field.source].map((item) => `<option value="${escapeHtml(item.id)}" ${item.id === normalizedValue ? 'selected' : ''}>${escapeHtml(item.name)}</option>`).join('')}`;
-      control = `<select name="${field.key}"${attributes}>${options}</select>`;
-    } else if (field.type === 'textarea') {
-      control = `<textarea name="${field.key}" rows="5"${attributes}>${escapeHtml(normalizedValue)}</textarea>`;
-    } else {
-      control = `<input name="${field.key}" type="${field.type || 'text'}" value="${escapeHtml(normalizedValue)}"${attributes}>`;
-    }
-    return `<label class="${field.wide ? 'form-wide' : ''}"><span>${field.label}</span>${control}</label>`;
-  }
-
-  function renderEditForm(type, id, returnTab) {
-    const record = getRecordById(type, id);
-    if (!record) { window.location.hash = `#${type}`; return; }
-    if (type === 'requests') {
-      app.innerHTML = '<div class="empty-state"><h2>Forespørsel kan ikke redigeres direkte</h2><p>Bruk knappen «Foreslå nytt tidspunkt» på forespørselen for å endre tid.</p></div>';
-      return;
-    }
-    const currentUser = getCurrentUser();
-    if (!canEditRecord(type, record, currentUser)) {
-      app.innerHTML = '<div class="empty-state"><h2>Du kan ikke redigere denne posten</h2><p>Kun egne poster kan redigeres.</p></div>';
-      return;
-    }
-    const fields = (createFields[type] || []).filter((field) => field.type !== 'image');
-    const lockedWishFields = type === 'wishes' ? new Set(['userId', 'ønsketype']) : new Set();
-    const lockedUserRoleFields = type === 'users' && !isAdmin(currentUser) ? new Set(['profil']) : new Set();
-    const returnUrl = `#${singular[type]}/${encodeURIComponent(id)}${returnTab ? `/${returnTab}` : ''}`;
-    app.innerHTML = `<a class="back-link" href="${returnUrl}">← Tilbake</a><section class="page-heading"><div><p class="eyebrow">Rediger post</p><h1>Endre ${escapeHtml(record.name)}</h1><p class="lede">Oppdater feltene under og lagre endringene.</p></div></section><form class="profile-form detail-panel" id="edit-form"><div class="form-grid">${fields.map((field) => renderEditField(field, record, lockedWishFields.has(field.key) || lockedUserRoleFields.has(field.key))).join('')}</div><div class="form-actions"><a class="button button-secondary" href="${returnUrl}">Avbryt</a><button class="button" type="submit">Lagre endringer</button></div><p class="form-error" role="alert" hidden></p></form>`;
-    document.querySelector('#edit-form').addEventListener('submit', (event) => {
-      event.preventDefault();
-      const form = event.currentTarget;
-      const values = Object.fromEntries(new FormData(form));
-      fields.filter((field) => field.array).forEach((field) => { values[field.key] = String(values[field.key] || '').split(',').map((part) => part.trim()).filter(Boolean); });
-      fields.filter((field) => field.type === 'number').forEach((field) => { values[field.key] = Number(values[field.key]); });
-      Object.keys(values).forEach((key) => { if (typeof values[key] === 'string') values[key] = values[key].trim(); });
-      if (type === 'users' && !isAdmin(currentUser)) values.profil = getProfil(record);
-      if (type === 'wishes' && Boolean(values.userId) === Boolean(values.horseId)) {
-        const message = form.querySelector('.form-error');
-        message.textContent = 'Velg enten én bruker eller én hest for ønsket.';
-        message.hidden = false;
-        return;
-      }
-      Object.assign(record, values);
-      saveRecordEdit(type, record);
-      syncLocalType(type);
-      window.location.hash = returnUrl;
-    });
-    updateNavigation(type);
-  }
-  function renderCreateForm(type, contextType, contextId, returnTab) {
-    const currentUser = getCurrentUser();
-    if (!canCreateRecord(type, currentUser)) {
-      app.innerHTML = '<div class="empty-state"><h2>Ingen tilgang</h2><p>Du har ikke tilgang til å opprette denne typen post.</p></div>';
-      return;
-    }
-    const fields = createFields[type];
-    const presets = relationPresets(type, contextType, contextId);
-    const contextRecord = contextType ? getRecordById(contextType, contextId) : null;
-    const returnUrl = contextRecord ? `#${singular[contextType]}/${contextId}/${returnTab}` : `#${type}`;
-    const contextText = contextRecord ? ` Relasjonen til ${contextRecord.name} legges til automatisk.` : '';
-    app.innerHTML = `<a class="back-link" href="${returnUrl}">← Tilbake</a><section class="page-heading"><div><p class="eyebrow">Ny post</p><h1>Opprett ${createLabels[type]}</h1><p class="lede">Posten lagres lokalt i denne nettleseren.${escapeHtml(contextText)}</p></div></section><form class="profile-form detail-panel" id="create-form"><div class="form-grid">${fields.map((field) => renderCreateField(field, presets)).join('')}</div><div class="form-actions"><a class="button button-secondary" href="${returnUrl}">Avbryt</a><button class="button" type="submit">Lagre ${createLabels[type]}</button></div><p class="form-error" role="alert" hidden></p></form>`;
-    if (type === 'wishes') {
-      const form = document.querySelector('#create-form');
-      const wishTypeSelect = form.querySelector('[name="ønsketype"]');
-      const horseSelect = form.querySelector('[name="horseId"]');
-      const horseField = horseSelect ? horseSelect.closest('label') : null;
-      const addressInput = form.querySelector('[name="address"]');
-      const toggleHorseField = () => {
-        if (!wishTypeSelect || !horseField || !horseSelect) return;
-        const needsHorse = wishTypeSelect.value === 'Ønsker en rytter';
-        horseField.hidden = !needsHorse;
-        horseSelect.required = needsHorse;
-        if (addressInput) addressInput.required = needsHorse;
-        if (!needsHorse) horseSelect.value = '';
-      };
-      if (wishTypeSelect && horseField && horseSelect) {
-        wishTypeSelect.addEventListener('change', toggleHorseField);
-        toggleHorseField();
-      }
-    }
-    const imageInput = document.querySelector('[name="imageFile"]');
-    if (imageInput) imageInput.addEventListener('change', () => {
-      const preview = document.querySelector('.image-preview');
-      if (!imageInput.files[0]) { preview.hidden = true; return; }
-      preview.src = URL.createObjectURL(imageInput.files[0]);
-      preview.hidden = false;
-    });
-    document.querySelector('#create-form').addEventListener('submit', async (event) => {
-      event.preventDefault();
-      const form = event.currentTarget;
-      const values = Object.fromEntries(new FormData(form));
-      delete values.imageFile;
-      fields.filter((field) => field.array).forEach((field) => { values[field.key] = values[field.key].split(',').map((value) => value.trim()).filter(Boolean); });
-      fields.filter((field) => field.type === 'number').forEach((field) => { values[field.key] = Number(values[field.key]); });
-      Object.keys(values).forEach((key) => { if (typeof values[key] === 'string') values[key] = values[key].trim(); });
-      if (type === 'users') values.profil = 'User';
-      if (type === 'requests') {
-        if (!values.sender && currentUser) values.sender = currentUser.id;
-        if (!values.userId && values.sender) values.userId = values.sender;
-        if (!values.mottaker && values.wishId) {
-          const wish = getRecordById('wishes', values.wishId);
-          values.mottaker = wish?.userId || (wish?.horseId ? getRecordById('horses', wish.horseId)?.ownerId : '');
-        }
-      }
-      if (type === 'requests') values.name = generateNextRequestName();
-      const record = { id: `${idPrefixes[type]}-LOCAL-${Date.now()}`, ...values };
-      if (type === 'users' || type === 'horses') record.active = true;
-      if (type === 'events') record.participantIds = [];
-      const message = form.querySelector('.form-error');
-      if (type === 'wishes' && Boolean(record.userId) === Boolean(record.horseId)) {
-        message.textContent = 'Velg enten én bruker eller én hest for ønsket.';
-        message.hidden = false;
-        return;
-      }
-      try {
-        const imageData = imageInput ? await compressImage(imageInput.files[0]) : '';
-        saveLocalRecord(type, record);
-        if (type === 'requests' && record.mottaker) addNotification(record.mottaker, `Ny forespørsel mottatt: ${record.name}.`, `#request/${encodeURIComponent(record.id)}`);
-        if (imageData) saveProfileImage(record.id, imageData);
-        window.location.hash = contextRecord ? returnUrl : `#${singular[type]}/${record.id}`;
-      } catch (error) {
-        message.textContent = error.message || 'Posten kunne ikke lagres lokalt i denne nettleseren.';
-        message.hidden = false;
-      }
-    });
-    updateNavigation(type);
-  }
-  function relatedRecords(type, key, id) { return data[type].filter((record) => record[key] === id); }
-  function renderRelatedList(type, records) {
-    if (!records.length) return '<div class="empty-state compact"><span aria-hidden="true">○</span><h3>Ingen relaterte poster</h3><p>Det finnes ingen registrerte poster her ennå.</p></div>';
-    return `<div class="related-list">${records.map((record) => `<a class="related-item" href="#${singular[type]}/${record.id}"><strong>${escapeHtml(record.name)}</strong><span aria-hidden="true">→</span></a>`).join('')}</div>`;
-  }
-  function renderDetailValue(key, value) {
-    if (key === 'ownerId' || key === 'userId' || key === 'sender' || key === 'mottaker') return value ? lookupLink(value, 'users') : '—';
-    if (key === 'organizerId') return value ? lookupLink(value, 'users') : '—';
-    if (key === 'horseId') return value ? lookupLink(value, 'horses') : '—';
-    if (key === 'wishId') return value ? lookupLink(value, 'wishes') : '—';
-    if (key === 'participantIds') return value.length ? value.map((userId) => lookupLink(userId, 'users')).join(', ') : 'Ingen deltakere ennå';
-    return escapeHtml(formatValue(key, value));
-  }
-  function renderDetail(type, id, tab) {
-    const record = getRecordById(type, id);
-    if (!record) { app.innerHTML = '<div class="empty-state"><h1>Posten finnes ikke</h1><a class="record-link" href="#users">Til oversikten</a></div>'; return; }
-    const related = type === 'horses' ? { requests: relatedRecords('requests', 'horseId', id), wishes: relatedRecords('wishes', 'horseId', id), activities: relatedRecords('activities', 'horseId', id), qualifications: relatedRecords('qualifications', 'horseId', id), incidents: relatedRecords('incidents', 'horseId', id) } : type === 'users' ? { requests: data.requests.filter((request) => request.sender === id || request.mottaker === id || request.userId === id), horses: relatedRecords('horses', 'ownerId', id), wishes: relatedRecords('wishes', 'userId', id), activities: data.activities.filter((activity) => activity.userId === id || activity.mottaker === id), qualifications: relatedRecords('qualifications', 'userId', id) } : {};
-    const tabs = type === 'horses' ? [['details', 'Detaljer'], ['requests', `Forespørsler (${related.requests.length})`], ['wishes', `Ønsker (${related.wishes.length})`], ['activities', `Aktiviteter (${related.activities.length})`], ['qualifications', `Kvalifikasjoner (${related.qualifications.length})`], ['incidents', `Hendelser (${related.incidents.length})`]] : type === 'users' ? [['details', 'Detaljer'], ['requests', `Forespørsler (${related.requests.length})`], ['wishes', `Ønsker (${related.wishes.length})`], ['horses', `Hester (${related.horses.length})`], ['activities', `Aktiviteter (${related.activities.length})`], ['qualifications', `Kvalifikasjoner (${related.qualifications.length})`]] : [];
-    const relationKey = type === 'users' ? (tab === 'horses' ? 'horses' : tab) : tab;
-    const supportsImage = type === 'users' || type === 'horses';
-    const imageSource = supportsImage ? getProfileImage(record) : '';
-    const profileMedia = supportsImage ? `<div class="profile-media">${imageSource ? `<img src="${escapeHtml(imageSource)}" alt="${escapeHtml(record.name)}">` : `<div class="profile-image-placeholder" aria-hidden="true">${type === 'horses' ? '♞' : escapeHtml(record.name.charAt(0))}</div>`}<label class="image-upload-button"><span>${imageSource ? 'Bytt bilde' : 'Legg til bilde'}</span><input type="file" accept="image/jpeg,image/png,image/webp" data-profile-image></label><p class="image-upload-error" role="alert" hidden></p></div>` : '';
-    const currentUser = getCurrentUser();
-    const createRelated = tabs.length && tab && tab !== 'details' && canCreateRecord(relationKey, currentUser)
-      ? `<div class="related-toolbar"><div><strong>${labels[relationKey]}</strong><span>${related[relationKey].length} poster relatert til ${escapeHtml(record.name)}</span></div><a class="button" href="#new-${singular[relationKey]}/${singular[type]}/${encodeURIComponent(id)}/${tab}">+ Legg Til</a></div>`
-      : '';
-    const participants = type === 'events' ? getEventParticipants(record) : [];
-    const eventRecord = type === 'events' ? { ...record, participantIds: participants } : record;
-    const visibleDetailFields = type === 'wishes'
-      ? [
-          ...detailFields[type].filter(([key]) => key === 'userId'),
-          ...detailFields[type].filter(([key]) => key === 'status'),
-          ...detailFields[type].filter(([key]) => key === 'horseId'),
-          ...detailFields[type].filter(([key]) => key === 'ønsketype'),
-          ...detailFields[type].filter(([key]) => !['userId', 'status', 'horseId', 'ønsketype'].includes(key))
-        ]
-      : detailFields[type];
-    const body = tabs.length && tab && tab !== 'details' ? `${createRelated}${renderRelatedList(relationKey, related[relationKey])}` : `<div class="detail-grid">${visibleDetailFields.map(([key, label]) => `<div class="detail-field"><dt>${label}</dt><dd>${renderDetailValue(key, eventRecord[key])}</dd></div>`).join('')}</div>`;
-    const isOwnWish = type === 'wishes' && currentUser ? isWishOwnedByUser(record, currentUser.id) : false;
-    const isRequestParticipant = type === 'requests' && currentUser && (record.sender === currentUser.id || record.mottaker === currentUser.id);
-    const canProposeNewTime = isRequestParticipant && record.status !== 'Avslått';
-    const pendingTimeProposal = type === 'requests' ? record.pendingTimeProposal : null;
-    const canRespondToTimeProposal = Boolean(canProposeNewTime && pendingTimeProposal && pendingTimeProposal.toUserId === currentUser.id);
-    const requestActionButtons = [];
-    if (type === 'requests' && currentUser) {
-      if (record.mottaker === currentUser.id && record.status === 'Under behandling') {
-        requestActionButtons.push('<button class="button" type="button" data-approve-request-detail>Godkjenn forespørsel</button>');
-        requestActionButtons.push('<button class="button button-secondary" type="button" data-reject-request-detail>Avslå forespørsel</button>');
-      }
-      if (canProposeNewTime) requestActionButtons.push('<button class="button button-secondary" type="button" data-open-reschedule-form>Foreslå nytt tidspunkt</button>');
-    }
-    const requestAction = type === 'horses'
-      ? (canCreateRecord('requests', currentUser) ? `<a class="button" href="#new-request/horse/${encodeURIComponent(id)}/requests">Legg til forespørsel</a>` : '')
-      : type === 'wishes'
-        ? (isOwnWish || !canCreateRecord('requests', currentUser) ? '' : `<a class="button" href="#new-request/wish/${encodeURIComponent(id)}/requests">Send forespørsel</a>`)
-        : type === 'requests' && currentUser
-          ? (requestActionButtons.length ? `<div class="inline-actions">${requestActionButtons.join('')}</div>` : '')
-          : '';
-    const eventAction = type === 'events' ? currentUser ? `<button class="button" type="button" data-event-participation>${participants.includes(currentUser.id) ? 'Forlat arrangement' : 'Bli med'}</button>` : '<a class="button" href="#login">Logg inn for å delta</a>' : '';
-    const primaryAction = requestAction || eventAction;
-    const editAction = type !== 'requests' && canEditRecord(type, record, currentUser) ? `<a class="button button-secondary" href="#edit/${singular[type]}/${encodeURIComponent(id)}${tab ? `/${tab}` : ''}">Endre</a>` : '';
-    const detailEditAction = editAction ? `<div class="form-actions">${editAction}</div>` : '';
-    const statusBadge = type !== 'wishes' && record.status ? `<span class="badge badge-large badge-${record.status.toLowerCase().replaceAll(' ', '-')}">${escapeHtml(record.status)}</span>` : record.active !== undefined ? `<span class="badge badge-large">${record.active ? 'Aktiv' : 'Inaktiv'}</span>` : '';
-    const requestRescheduleSection = type === 'requests' && currentUser
-      ? `<section class="detail-panel"><h3>Foreslått tidspunkt</h3><div class="detail-grid"><div class="detail-field"><dt>Gjeldende dato</dt><dd>${escapeHtml(formatValue('date', record.date))}</dd></div><div class="detail-field"><dt>Gjeldende tid</dt><dd>${escapeHtml(record.startTime || '—')}</dd></div></div>${pendingTimeProposal ? `<div class="empty-state compact"><h3>${escapeHtml(getUserName(pendingTimeProposal.fromUserId))} foreslår nytt tidspunkt</h3><p>${escapeHtml(formatValue('date', pendingTimeProposal.date))} kl. ${escapeHtml(pendingTimeProposal.startTime)}${pendingTimeProposal.durationHours ? ` · ${escapeHtml(String(pendingTimeProposal.durationHours))} timer` : ''}${pendingTimeProposal.comment ? `<br>${escapeHtml(pendingTimeProposal.comment)}` : ''}</p>${canRespondToTimeProposal ? '<div class="inline-actions"><button class="button" type="button" data-approve-reschedule>Godkjenn ny tid</button><button class="button button-secondary" type="button" data-reject-reschedule>Avslå ny tid</button><button class="button button-secondary" type="button" data-open-reschedule-form>Foreslå nytt tidspunkt</button></div>' : '<p>Venter på svar fra motpart.</p>'}</div>` : '<p>Ingen aktive forslag til nytt tidspunkt.</p>'}${canProposeNewTime ? `<form id="reschedule-form" class="profile-form" hidden><div class="form-grid"><label><span>Ny dato</span><input name="date" type="date" required value="${escapeHtml(record.date || '')}"></label><label><span>Nytt tidspunkt</span><input name="startTime" type="time" required value="${escapeHtml(record.startTime || '')}"></label><label><span>Varighet (timer)</span><input name="durationHours" type="number" min="0.5" max="12" step="0.5" value="${escapeHtml(String(record.durationHours || 1))}"></label><label class="form-wide"><span>Kommentar</span><textarea name="comment" rows="3" placeholder="For eksempel: passer dette bedre?">${escapeHtml(pendingTimeProposal?.toUserId === currentUser.id ? '' : (pendingTimeProposal?.comment || ''))}</textarea></label></div><div class="form-actions"><button class="button" type="submit">Send forslag</button><button class="button button-secondary" type="button" data-cancel-reschedule>Avbryt</button></div><p class="form-error" role="alert" hidden></p></form>` : ''}</section>`
-      : '';
-    app.innerHTML = `<a class="back-link" href="#${type}">← Til ${labels[type].toLowerCase()}</a><section class="record-profile-header ${supportsImage ? '' : 'record-profile-header-no-media'}">${profileMedia}<div class="record-header"><div><p class="eyebrow">${labels[type]}</p><h1>${escapeHtml(record.name)}</h1>${primaryAction ? `<div class="record-primary-action">${primaryAction}</div>` : ''}</div><div class="record-actions">${statusBadge}</div></div></section>${tabs.length ? `<nav class="inner-tabs" aria-label="Relaterte poster">${tabs.map(([value, label]) => `<a class="${(tab || 'details') === value ? 'is-active' : ''}" href="#${singular[type]}/${id}${value === 'details' ? '' : `/${value}`}"\>${label}</a>`).join('')}</nav>` : ''}<section class="detail-panel">${body}${detailEditAction}</section>${requestRescheduleSection}`;
-    const eventParticipation = document.querySelector('[data-event-participation]');
-    if (eventParticipation) eventParticipation.addEventListener('click', () => { toggleEventParticipant(id, currentUser.id); renderDetail(type, id, tab); });
-    const approveRequestDetail = document.querySelector('[data-approve-request-detail]');
-    if (approveRequestDetail) approveRequestDetail.addEventListener('click', () => {
-      updateRequestStatus(id, 'Godkjent');
-      createActivityFromApprovedRequest(id);
-      addNotification(record.sender, `Forespørselen ${record.name} ble godkjent.`, `#request/${encodeURIComponent(record.id)}`);
-      renderDetail(type, id, tab);
-      updateAuthAction();
-    });
-    const rejectRequestDetail = document.querySelector('[data-reject-request-detail]');
-    if (rejectRequestDetail) rejectRequestDetail.addEventListener('click', () => {
-      updateRequestStatus(id, 'Avslått');
-      addNotification(record.sender, `Forespørselen ${record.name} ble avslått.`, `#request/${encodeURIComponent(record.id)}`);
-      renderDetail(type, id, tab);
-      updateAuthAction();
-    });
-    const openRescheduleForm = document.querySelectorAll('[data-open-reschedule-form]');
-    openRescheduleForm.forEach((button) => button.addEventListener('click', () => {
-      const form = document.querySelector('#reschedule-form');
-      if (!form) return;
-      form.hidden = false;
-      form.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-    }));
-    const cancelReschedule = document.querySelector('[data-cancel-reschedule]');
-    if (cancelReschedule) cancelReschedule.addEventListener('click', () => {
-      const form = document.querySelector('#reschedule-form');
-      if (!form) return;
-      form.hidden = true;
-    });
-    const rescheduleForm = document.querySelector('#reschedule-form');
-    if (rescheduleForm && currentUser && isRequestParticipant) rescheduleForm.addEventListener('submit', (event) => {
-      event.preventDefault();
-      const values = Object.fromEntries(new FormData(event.currentTarget));
-      const message = event.currentTarget.querySelector('.form-error');
-      if (!values.date || !values.startTime) {
-        message.textContent = 'Velg både dato og tidspunkt.';
-        message.hidden = false;
-        return;
-      }
-      const counterpartId = record.sender === currentUser.id ? record.mottaker : record.sender;
-      record.pendingTimeProposal = {
-        fromUserId: currentUser.id,
-        toUserId: counterpartId,
-        date: String(values.date).trim(),
-        startTime: String(values.startTime).trim(),
-        durationHours: Number(values.durationHours) || record.durationHours || 1,
-        comment: String(values.comment || '').trim(),
-        createdAt: new Date().toISOString()
-      };
-      syncLocalType('requests');
-      addNotification(counterpartId, `${currentUser.name} foreslo nytt tidspunkt for ${record.name}.`, `#request/${encodeURIComponent(record.id)}`);
-      renderDetail(type, id, tab);
-      updateAuthAction();
-    });
-    const approveReschedule = document.querySelector('[data-approve-reschedule]');
-    if (approveReschedule && currentUser && canRespondToTimeProposal) approveReschedule.addEventListener('click', () => {
-      const proposal = record.pendingTimeProposal;
-      if (!proposal) return;
-      record.date = proposal.date;
-      record.startTime = proposal.startTime;
-      record.durationHours = proposal.durationHours;
-      record.pendingTimeProposal = null;
-      syncLocalType('requests');
-      syncActivityFromRequest(record);
-      addNotification(proposal.fromUserId, `${currentUser.name} godkjente nytt tidspunkt for ${record.name}.`, `#request/${encodeURIComponent(record.id)}`);
-      renderDetail(type, id, tab);
-      updateAuthAction();
-    });
-    const rejectReschedule = document.querySelector('[data-reject-reschedule]');
-    if (rejectReschedule && currentUser && canRespondToTimeProposal) rejectReschedule.addEventListener('click', () => {
-      const proposal = record.pendingTimeProposal;
-      if (!proposal) return;
-      record.pendingTimeProposal = null;
-      syncLocalType('requests');
-      addNotification(proposal.fromUserId, `${currentUser.name} avslo nytt tidspunkt for ${record.name}.`, `#request/${encodeURIComponent(record.id)}`);
-      renderDetail(type, id, tab);
-      updateAuthAction();
-    });
-    const profileImageInput = document.querySelector('[data-profile-image]');
-    if (profileImageInput) profileImageInput.addEventListener('change', async () => {
-      const errorMessage = document.querySelector('.image-upload-error');
-      try {
-        const imageData = await compressImage(profileImageInput.files[0]);
-        if (imageData) saveProfileImage(record.id, imageData);
-        renderDetail(type, id, tab);
-      } catch (error) {
-        errorMessage.textContent = error.message;
-        errorMessage.hidden = false;
-      }
-    });
-  }
-  function bindListEvents(type) {
-    const debouncedRenderRows = debounce(() => renderObjectListRows(type), searchDebounceMs);
-    document.querySelector('#record-search').addEventListener('input', (event) => {
-      state.search = event.target.value;
-      debouncedRenderRows();
-    });
-    document.querySelectorAll('[data-filter-key]').forEach((select) => select.addEventListener('change', (event) => {
-      state.selectedFilters[event.target.dataset.filterKey] = event.target.value;
-      renderObjectListRows(type);
-    }));
   }
   function csvValue(value) { return `"${String(Array.isArray(value) ? value.join('; ') : value ?? '').replaceAll('"', '""').replace(/\r?\n/g, ' ')}"`; }
   function exportObjectToCsv(type) {
@@ -1073,7 +517,7 @@
       return;
     }
     if (parts[0] === 'logout') {
-      localStorage.removeItem(currentUserKey);
+      clearCurrentUser();
       updateAuthAction();
       window.location.hash = '#home';
       return;
