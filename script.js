@@ -454,7 +454,6 @@
   });
 
   function renderLogin(intent = '') {
-    const currentUser = getCurrentUser();
     const loginLedeByIntent = {
       'har-hest': 'Logg inn for å finne en rytter som passer din hest.',
       'vil-ri': 'Logg inn for å finne en hest som passer din erfaring og rideønske.',
@@ -463,11 +462,21 @@
       'se-hesteprofil': 'Logg inn for å se hesteprofilen og finne en passende turkamerat.'
     };
     const normalizedIntent = String(intent || '').trim().toLowerCase();
-    const loginLede = loginLedeByIntent[normalizedIntent] || 'Velg en bruker. Passord er ikke nødvendig i denne prototypen.';
-    app.innerHTML = `<a class="back-link" href="#home">← Til Min Side</a><section class="page-heading"><div><p class="eyebrow">Lokal innlogging</p><h1>Logg inn</h1><p class="lede">${escapeHtml(loginLede)}</p></div></section><form class="profile-form detail-panel" id="login-form"><div class="form-grid"><label class="form-wide"><span>Bruker</span><select name="userId" required><option value="">Velg bruker</option>${data.users.filter((user) => user.active).map((user) => `<option value="${escapeHtml(user.id)}" ${currentUser && currentUser.id === user.id ? 'selected' : ''}>${escapeHtml(user.name)} · ${escapeHtml(user.location)}</option>`).join('')}</select></label></div><div class="form-actions"><a class="button button-secondary" href="#home">Avbryt</a><a class="button button-secondary" href="#register-user">Registrer Bruker</a><button class="button" type="submit">Logg inn</button></div></form>`;
+    const loginLede = loginLedeByIntent[normalizedIntent] || 'Oppgi e-post for å logge inn. Passord er ikke nødvendig i denne prototypen.';
+    app.innerHTML = `<a class="back-link" href="#home">← Til Min Side</a><section class="page-heading"><div><p class="eyebrow">Lokal innlogging</p><h1>Logg inn</h1><p class="lede">${escapeHtml(loginLede)}</p></div></section><form class="profile-form detail-panel" id="login-form"><div class="form-grid"><label class="form-wide"><span>E-post</span><input name="email" type="email" required placeholder="navn@epost.no" autocomplete="email"></label></div><div class="form-actions"><a class="button button-secondary" href="#register-user">Registrer Bruker</a><button class="button" type="submit">Logg inn</button></div><p class="form-error" role="alert" hidden></p></form>`;
     document.querySelector('#login-form').addEventListener('submit', (event) => {
       event.preventDefault();
-      setCurrentUserId(new FormData(event.currentTarget).get('userId'));
+      const formValues = new FormData(event.currentTarget);
+      const message = event.currentTarget.querySelector('.form-error');
+      const email = String(formValues.get('email') || '').trim().toLowerCase();
+      message.hidden = true;
+      const matchingUser = data.users.find((user) => user.active && String(user.email || '').trim().toLowerCase() === email);
+      if (!matchingUser) {
+        message.textContent = 'Fant ingen aktiv bruker med denne e-posten.';
+        message.hidden = false;
+        return;
+      }
+      setCurrentUserId(matchingUser.id);
       updateAuthAction();
       window.location.hash = '#home';
     });
@@ -475,7 +484,7 @@
   }
 
   function renderRegisterUser() {
-    app.innerHTML = `<a class="back-link" href="#login">← Til Logg inn</a><section class="page-heading"><div><p class="eyebrow">Ny bruker</p><h1>Registrer Bruker</h1><p class="lede">Opprett en brukerprofil for å komme i gang. Profil settes automatisk til User og Aktiv settes til Ja.</p></div></section><form class="profile-form detail-panel" id="register-user-form"><div class="form-grid"><label><span>Navn</span><input name="name" required placeholder="For eksempel Ola Nordmann"></label><label><span>Rolle</span><select name="role" required><option value="Rytter">Rytter</option><option value="Hesteeier">Hesteeier</option><option value="Begge">Begge</option></select></label><label><span>Fylke</span><input name="location" required placeholder="For eksempel Agder"></label><label><span>År med erfaring</span><input name="yearsOfExperience" type="number" min="0" max="80" step="1" value="0"></label><label><span>Telefon</span><input name="phone" type="tel" placeholder="+47 400 00 000"></label><label><span>Erfaringsnivå</span><select name="experienceLevel" required><option value="">Velg nivå</option><option value="Nybegynner">Nybegynner</option><option value="Øvet">Øvet</option><option value="Erfaren">Erfaren</option></select></label><label class="form-wide"><span>Biografi</span><textarea name="biography" rows="4" placeholder="Fortell kort om erfaringen din"></textarea></label></div><div class="form-actions"><a class="button button-secondary" href="#login">Avbryt</a><button class="button" type="submit">Opprett bruker</button></div><p class="form-error" role="alert" hidden></p></form>`;
+    app.innerHTML = `<a class="back-link" href="#login">← Til Logg inn</a><section class="page-heading"><div><p class="eyebrow">Ny bruker</p><h1>Registrer Bruker</h1></div></section><form class="profile-form detail-panel" id="register-user-form"><div class="form-grid"><label><span>Navn</span><input name="name" required placeholder="For eksempel Ola Nordmann"></label><label><span>Rolle</span><select name="role" required><option value="Rytter">Rytter</option><option value="Hesteeier">Hesteeier</option><option value="Begge">Begge</option></select></label><label><span>Fylke</span><input name="location" required placeholder="For eksempel Agder"></label><label><span>E-post</span><input name="email" type="email" required placeholder="navn@epost.no" autocomplete="email"></label><label><span>Telefon</span><input name="phone" type="tel" placeholder="+47 400 00 000"></label><label><span>Erfaringsnivå</span><select name="experienceLevel" required><option value="">Velg nivå</option><option value="Nybegynner">Nybegynner</option><option value="Øvet">Øvet</option><option value="Erfaren">Erfaren</option></select></label></div><div class="form-actions"><a class="button button-secondary" href="#login">Avbryt</a><button class="button" type="submit">Opprett bruker</button></div><p class="form-error" role="alert" hidden></p></form>`;
 
     document.querySelector('#register-user-form').addEventListener('submit', (event) => {
       event.preventDefault();
@@ -484,12 +493,19 @@
       const name = String(values.name || '').trim();
       const location = String(values.location || '').trim();
       const experienceLevel = String(values.experienceLevel || '').trim();
-      if (!name || !location || !experienceLevel) {
-        message.textContent = 'Navn, Fylke og Erfaringsnivå er obligatoriske felter.';
+      const email = String(values.email || '').trim().toLowerCase();
+      message.hidden = true;
+      if (!name || !location || !experienceLevel || !email) {
+        message.textContent = 'Navn, Fylke, E-post og Erfaringsnivå er obligatoriske felter.';
         message.hidden = false;
         return;
       }
-      const years = Number(values.yearsOfExperience);
+      const emailInUse = data.users.some((user) => String(user.email || '').trim().toLowerCase() === email);
+      if (emailInUse) {
+        message.textContent = 'E-postadressen er allerede i bruk.';
+        message.hidden = false;
+        return;
+      }
       const record = {
         id: `${idPrefixes.users}-LOCAL-${Date.now()}`,
         name,
@@ -497,9 +513,10 @@
         profil: 'User',
         location,
         experienceLevel,
-        yearsOfExperience: Number.isFinite(years) && years >= 0 ? years : 0,
+        yearsOfExperience: 0,
+        email,
         phone: String(values.phone || '').trim(),
-        biography: String(values.biography || '').trim(),
+        biography: '',
         active: true
       };
       saveLocalRecord('users', record);
