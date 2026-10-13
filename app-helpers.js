@@ -8,7 +8,9 @@ window.HesteVennHelpers = function createHesteVennHelpers(context) {
 
   function getUserName(id) {
     const record = getRecordById('users', id);
-    return record ? record.name : id;
+    if (!record) return id;
+    const composedName = [String(record.firstName || '').trim(), String(record.lastName || '').trim()].filter(Boolean).join(' ').trim();
+    return composedName || record.name || id;
   }
 
   function getHorseName(id) {

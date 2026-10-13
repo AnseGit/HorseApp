@@ -25,6 +25,16 @@ window.HesteVennFormsWishFlow = function createHesteVennFormsWishFlow(context) {
     updateNavigation
   } = context;
 
+function composeUserName(firstName, lastName) {
+  return [String(firstName || '').trim(), String(lastName || '').trim()].filter(Boolean).join(' ').trim();
+}
+
+function userFirstName(user) {
+  const explicit = String(user?.firstName || '').trim();
+  if (explicit) return explicit;
+  return String(user?.name || '').trim().split(/\s+/).filter(Boolean)[0] || 'Bruker';
+}
+
 function createWishFlowDefaults() {
   const currentUser = getCurrentUser();
   return {
@@ -76,7 +86,7 @@ function renderCreateWishFlowStep2() {
     : '';
   app.innerHTML = `<a class="back-link" href="#create-wish">← Tilbake</a><section class="page-heading"><div><p class="eyebrow">Opprett Ønske · 2 av 3</p><h1>${escapeHtml(flow.ønsketype)}</h1><p class="lede">Svar på spørsmålene under for å opprette ønsket ditt.</p></div></section><form class="profile-form detail-panel" id="wish-flow-step-2"><div class="form-grid"><label><span>Fylke</span><input name="location" required value="${escapeHtml(flow.location)}"></label><label><span>Adresse</span><input name="address"${needsHorse ? ' required' : ''} value="${escapeHtml(flow.address)}" placeholder="For eksempel Stallveien 12, 4630 Kristiansand"></label><label><span>Erfaring</span><select name="erfaring" required><option value="Nybegynner" ${flow.erfaring === 'Nybegynner' ? 'selected' : ''}>Nybegynner</option><option value="Lett øvet" ${flow.erfaring === 'Lett øvet' ? 'selected' : ''}>Lett øvet</option><option value="Erfaren" ${flow.erfaring === 'Erfaren' ? 'selected' : ''}>Erfaren</option><option value="Profesjonell" ${flow.erfaring === 'Profesjonell' ? 'selected' : ''}>Profesjonell</option></select></label><label><span>Aktivitetstype</span><select name="aktivitetstype" required><option value="Engangstilfelle" ${flow.aktivitetstype === 'Engangstilfelle' ? 'selected' : ''}>Engangstilfelle</option><option value="Månedlig" ${flow.aktivitetstype === 'Månedlig' ? 'selected' : ''}>Månedlig</option><option value="Ukentlig" ${flow.aktivitetstype === 'Ukentlig' ? 'selected' : ''}>Ukentlig</option><option value="Daglig" ${flow.aktivitetstype === 'Daglig' ? 'selected' : ''}>Daglig</option><option value="Periode" ${flow.aktivitetstype === 'Periode' ? 'selected' : ''}>Periode</option></select></label><label><span>Størrelse på hest</span><select name="størrelsePåHest" required><option value="Liten" ${flow.størrelsePåHest === 'Liten' ? 'selected' : ''}>Liten</option><option value="Mellom" ${flow.størrelsePåHest === 'Mellom' ? 'selected' : ''}>Mellom</option><option value="Stor" ${flow.størrelsePåHest === 'Stor' ? 'selected' : ''}>Stor</option></select></label><label><span>Ridestil</span><select name="ridestil" required><option value="Tur" ${flow.ridestil === 'Tur' ? 'selected' : ''}>Tur</option><option value="Dressur" ${flow.ridestil === 'Dressur' ? 'selected' : ''}>Dressur</option><option value="Sprang" ${flow.ridestil === 'Sprang' ? 'selected' : ''}>Sprang</option><option value="Fôr" ${flow.ridestil === 'Fôr' ? 'selected' : ''}>Fôr</option></select></label>${horseField}<label class="form-wide"><span>Kvalifikasjoner</span><input name="qualifications" value="${escapeHtml(flow.qualifications)}" placeholder="For eksempel Trygg på tur, Grunnleggende håndtering"></label><label class="form-wide"><span>Kommentar</span><textarea name="comment" rows="5">${escapeHtml(flow.comment)}</textarea></label></div><div class="form-actions"><a class="button button-secondary" href="#create-wish">Tilbake</a><button class="button" type="submit">Opprett ønske</button></div><p class="form-error" role="alert" hidden></p></form>`;
   const buildWishAutoName = (wishType, currentUser, selectedHorseId, formValues) => {
-    const firstName = String(currentUser?.name || '').trim().split(/\s+/).filter(Boolean)[0] || 'Bruker';
+    const firstName = userFirstName(currentUser);
     const horseName = selectedHorseId ? getHorseName(selectedHorseId) : '';
     const ridestil = String(formValues.ridestil || '').trim().toLowerCase();
     const erfaring = String(formValues.erfaring || '').trim().toLowerCase();
@@ -230,6 +240,7 @@ function renderEditForm(type, id, returnTab) {
     fields.filter((field) => field.array).forEach((field) => { values[field.key] = String(values[field.key] || '').split(',').map((part) => part.trim()).filter(Boolean); });
     fields.filter((field) => field.type === 'number').forEach((field) => { values[field.key] = Number(values[field.key]); });
     Object.keys(values).forEach((key) => { if (typeof values[key] === 'string') values[key] = values[key].trim(); });
+    if (type === 'users') values.name = composeUserName(values.firstName, values.lastName);
     if (type === 'users' && !isAdmin(currentUser)) values.profil = getProfil(record);
     if (type === 'wishes' && Boolean(values.userId) === Boolean(values.horseId)) {
       const message = form.querySelector('.form-error');
@@ -290,6 +301,7 @@ function renderCreateForm(type, contextType, contextId, returnTab) {
     fields.filter((field) => field.array).forEach((field) => { values[field.key] = values[field.key].split(',').map((value) => value.trim()).filter(Boolean); });
     fields.filter((field) => field.type === 'number').forEach((field) => { values[field.key] = Number(values[field.key]); });
     Object.keys(values).forEach((key) => { if (typeof values[key] === 'string') values[key] = values[key].trim(); });
+    if (type === 'users') values.name = composeUserName(values.firstName, values.lastName);
     if (type === 'users') values.profil = 'User';
     if (type === 'requests') {
       if (!values.sender && currentUser) values.sender = currentUser.id;

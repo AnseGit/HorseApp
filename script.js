@@ -90,6 +90,35 @@
     });
   }
 
+  function splitUserName(name) {
+    const parts = String(name || '').trim().split(/\s+/).filter(Boolean);
+    if (!parts.length) return { firstName: '', lastName: '' };
+    if (parts.length === 1) return { firstName: parts[0], lastName: '' };
+    return { firstName: parts[0], lastName: parts.slice(1).join(' ') };
+  }
+
+  function composeUserName(firstName, lastName) {
+    return [String(firstName || '').trim(), String(lastName || '').trim()].filter(Boolean).join(' ').trim();
+  }
+
+  function getUserFirstName(user) {
+    if (!user) return '';
+    const firstName = String(user.firstName || '').trim();
+    if (firstName) return firstName;
+    return splitUserName(user.name).firstName;
+  }
+
+  function normalizeUserNames() {
+    data.users.forEach((user) => {
+      const fromFullName = splitUserName(user.name);
+      const firstName = String(user.firstName || fromFullName.firstName).trim();
+      const lastName = String(user.lastName || fromFullName.lastName).trim();
+      user.firstName = firstName;
+      user.lastName = lastName;
+      user.name = composeUserName(firstName, lastName) || String(user.name || '').trim();
+    });
+  }
+
   function hasActiveWishForUser(userId) {
     if (!userId) return false;
     return data.wishes.some((wish) => {
@@ -229,7 +258,7 @@
     const requestsActivitiesSection = hasIncomingRequests || hasUpcomingActivities
       ? `<div class="home-insights-grid home-insights-grid-mid"><article class="home-insight-card"><h3>Mine forespørsler</h3>${incomingRequestsBody}</article><article class="home-insight-card"><h3>Mine kommende aktiviteter</h3>${upcomingActivitiesBody}</article></div>`
       : '';
-    return `<section class="home-section home-insights-section"><div class="section-heading"><h2>Hei ${escapeHtml(currentUser.name)}</h2><p class="lede">Se relevante ønsker, forespørsler og arrangementer i nærheten.</p></div>${wishPromptInline}<article class="home-insight-card home-insight-card-full"><h3>Matchende ønsker</h3>${matchingWishBody}</article>${requestsActivitiesSection}<div class="home-insights-grid home-insights-grid-bottom"><article class="home-insight-card"><h3>Arrangementer i samme fylke</h3>${eventsBody}</article><article class="home-insight-card">${ownWishesBody}</article></div></section>`;
+    return `<section class="home-section home-insights-section"><div class="section-heading"><h2>Hei ${escapeHtml(getUserFirstName(currentUser))}</h2><p class="lede">Se relevante ønsker, forespørsler og arrangementer i nærheten.</p></div>${wishPromptInline}<article class="home-insight-card home-insight-card-full"><h3>Matchende ønsker</h3>${matchingWishBody}</article>${requestsActivitiesSection}<div class="home-insights-grid home-insights-grid-bottom"><article class="home-insight-card"><h3>Arrangementer i samme fylke</h3>${eventsBody}</article><article class="home-insight-card">${ownWishesBody}</article></div></section>`;
   }
 
   function updateAuthAction() {
@@ -484,19 +513,21 @@
   }
 
   function renderRegisterUser() {
-    app.innerHTML = `<a class="back-link" href="#login">← Til Logg inn</a><section class="page-heading"><div><p class="eyebrow">Ny bruker</p><h1>Registrer Bruker</h1></div></section><form class="profile-form detail-panel" id="register-user-form"><div class="form-grid"><label><span>Navn</span><input name="name" required placeholder="For eksempel Ola Nordmann"></label><label><span>Rolle</span><select name="role" required><option value="Rytter">Rytter</option><option value="Hesteeier">Hesteeier</option><option value="Begge">Begge</option></select></label><label><span>Fylke</span><input name="location" required placeholder="For eksempel Agder"></label><label><span>E-post</span><input name="email" type="email" required placeholder="navn@epost.no" autocomplete="email"></label><label><span>Telefon</span><input name="phone" type="tel" placeholder="+47 400 00 000"></label><label><span>Erfaringsnivå</span><select name="experienceLevel" required><option value="">Velg nivå</option><option value="Nybegynner">Nybegynner</option><option value="Øvet">Øvet</option><option value="Erfaren">Erfaren</option></select></label></div><div class="form-actions"><a class="button button-secondary" href="#login">Avbryt</a><button class="button" type="submit">Opprett bruker</button></div><p class="form-error" role="alert" hidden></p></form>`;
+    app.innerHTML = `<a class="back-link" href="#login">← Til Logg inn</a><section class="page-heading"><div><p class="eyebrow">Ny bruker</p><h1>Registrer Bruker</h1></div></section><form class="profile-form detail-panel" id="register-user-form"><div class="form-grid"><label><span>Fornavn</span><input name="firstName" required placeholder="For eksempel Ola" autocomplete="given-name"></label><label><span>Etternavn</span><input name="lastName" required placeholder="For eksempel Nordmann" autocomplete="family-name"></label><label><span>Rolle</span><select name="role" required><option value="Rytter">Rytter</option><option value="Hesteeier">Hesteeier</option><option value="Begge">Begge</option></select></label><label><span>Fylke</span><input name="location" required placeholder="For eksempel Agder"></label><label><span>E-post</span><input name="email" type="email" required placeholder="navn@epost.no" autocomplete="email"></label><label><span>Telefon</span><input name="phone" type="tel" placeholder="+47 400 00 000"></label><label><span>Erfaringsnivå</span><select name="experienceLevel" required><option value="">Velg nivå</option><option value="Nybegynner">Nybegynner</option><option value="Øvet">Øvet</option><option value="Erfaren">Erfaren</option></select></label></div><div class="form-actions"><a class="button button-secondary" href="#login">Avbryt</a><button class="button" type="submit">Opprett bruker</button></div><p class="form-error" role="alert" hidden></p></form>`;
 
     document.querySelector('#register-user-form').addEventListener('submit', (event) => {
       event.preventDefault();
       const values = Object.fromEntries(new FormData(event.currentTarget));
       const message = event.currentTarget.querySelector('.form-error');
-      const name = String(values.name || '').trim();
+      const firstName = String(values.firstName || '').trim();
+      const lastName = String(values.lastName || '').trim();
+      const name = composeUserName(firstName, lastName);
       const location = String(values.location || '').trim();
       const experienceLevel = String(values.experienceLevel || '').trim();
       const email = String(values.email || '').trim().toLowerCase();
       message.hidden = true;
-      if (!name || !location || !experienceLevel || !email) {
-        message.textContent = 'Navn, Fylke, E-post og Erfaringsnivå er obligatoriske felter.';
+      if (!firstName || !lastName || !location || !experienceLevel || !email) {
+        message.textContent = 'Fornavn, Etternavn, Fylke, E-post og Erfaringsnivå er obligatoriske felter.';
         message.hidden = false;
         return;
       }
@@ -509,6 +540,8 @@
       const record = {
         id: `${idPrefixes.users}-LOCAL-${Date.now()}`,
         name,
+        firstName,
+        lastName,
         role: String(values.role || 'Rytter').trim(),
         profil: 'User',
         location,
@@ -672,6 +705,7 @@
   loadLocalRecords();
   applySavedRecordEdits();
   normalizeUserProfiler();
+  normalizeUserNames();
   updateAuthAction();
   renderRoute();
 }());

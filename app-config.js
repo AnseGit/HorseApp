@@ -24,7 +24,7 @@ window.HesteVennConfig = {
     incidents: [['status', 'Alle statuser'], ['severity', 'Alle alvorlighetsgrader']]
   },
   detailFields: {
-    users: [['role', 'Rolle'], ['profil', 'Profil'], ['location', 'Fylke'], ['experienceLevel', 'Erfaringsnivå'], ['yearsOfExperience', 'År med erfaring'], ['email', 'E-post'], ['phone', 'Telefon'], ['biography', 'Biografi'], ['active', 'Aktiv']],
+    users: [['firstName', 'Fornavn'], ['lastName', 'Etternavn'], ['role', 'Rolle'], ['profil', 'Profil'], ['location', 'Fylke'], ['experienceLevel', 'Erfaringsnivå'], ['yearsOfExperience', 'År med erfaring'], ['email', 'E-post'], ['phone', 'Telefon'], ['biography', 'Biografi'], ['active', 'Aktiv']],
     horses: [['ownerId', 'Eier'], ['age', 'Alder'], ['breed', 'Rase'], ['gender', 'Kjønn'], ['height', 'Mankehøyde'], ['location', 'Fylke'], ['experienceRequirement', 'Krever erfaring'], ['temperament', 'Temperament'], ['suitableActivities', 'Passer til'], ['description', 'Beskrivelse'], ['active', 'Aktiv']],
     wishes: [['userId', 'Bruker'], ['horseId', 'Hest'], ['location', 'Fylke'], ['address', 'Adresse'], ['størrelsePåHest', 'Størrelse på hest'], ['erfaring', 'Erfaring'], ['ønsketype', 'Ønsketype'], ['aktivitetstype', 'Aktivitetstype'], ['ridestil', 'Ridestil'], ['status', 'Status'], ['qualifications', 'Kvalifikasjoner'], ['comment', 'Kommentar']],
     requests: [['wishId', 'Ønske'], ['sender', 'Sender'], ['mottaker', 'Mottaker'], ['horseId', 'Hest'], ['date', 'Dato'], ['startTime', 'Tidspunkt'], ['durationHours', 'Varighet (timer)'], ['activityType', 'Type aktivitet'], ['status', 'Forespørsel status'], ['comment', 'Kommentar']],
@@ -37,7 +37,7 @@ window.HesteVennConfig = {
   createFields: {
     users: [
       { key: 'image', label: 'Profilbilde', type: 'image', wide: true },
-      { key: 'name', label: 'Navn', required: true, autocomplete: 'name' }, { key: 'role', label: 'Rolle', type: 'select', required: true, options: ['Rytter', 'Hesteeier', 'Begge'] },
+      { key: 'firstName', label: 'Fornavn', required: true, autocomplete: 'given-name' }, { key: 'lastName', label: 'Etternavn', required: true, autocomplete: 'family-name' }, { key: 'role', label: 'Rolle', type: 'select', required: true, options: ['Rytter', 'Hesteeier', 'Begge'] },
       { key: 'profil', label: 'Profil', type: 'select', required: true, options: ['User', 'Premium User', 'Admin'], value: 'User' },
       { key: 'location', label: 'Fylke', required: true }, { key: 'experienceLevel', label: 'Erfaringsnivå', type: 'select', required: true, options: ['Nybegynner', 'Øvet', 'Erfaren'] },
       { key: 'yearsOfExperience', label: 'År med erfaring', type: 'number', required: true, min: 0, max: 80, value: 0 }, { key: 'email', label: 'E-post', type: 'email' },
