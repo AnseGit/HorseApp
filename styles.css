@@ -144,3 +144,19 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 @media (max-width: 1000px) { .choice-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }.home-insights-grid { grid-template-columns: 1fr; } }
 @media (max-width: 900px) { .list-toolbar { grid-template-columns: 1fr 1fr; }.filters { grid-column: 1 / -1; justify-content: start; }.nav-links { width: min(220px, calc(100vw - 24px)); }.nav-links a { padding: 8px; font-size: .8rem; } }
 @media (max-width: 700px) { .container { width: min(100% - 32px, 600px); }.app-shell { padding-top: 38px; }.page-heading { display: block; }.page-actions { justify-content: flex-start; margin-top: 20px; }.list-toolbar { grid-template-columns: 1fr; }.filters { overflow-x: auto; padding-bottom: 3px; }.filter select { min-width: 150px; }.detail-grid, .related-list, .form-grid { grid-template-columns: 1fr; }.form-wide { grid-column: auto; }.detail-panel { padding: 20px; }.record-profile-header { grid-template-columns: 1fr; gap: 20px; }.profile-media img, .profile-image-placeholder { width: 150px; }.image-upload-button, .image-upload-error { width: 150px; }.footer-content { display: grid; }.footer-links { flex-wrap: wrap; gap: 12px; }.home-page { margin: -38px -16px -90px; }.home-page > .home-section, .home-hero { padding-left: 16px; padding-right: 16px; }.home-hero { grid-template-columns: 1fr; min-height: auto; padding-top: 48px; padding-bottom: 48px; }.hero-mark { justify-self: start; width: 150px; font-size: 4.5rem; }.hero-mark span { transform: translate(40px, -45px); }.choice-grid, .home-horse-grid, .steps { grid-template-columns: 1fr; }.home-section { padding-top: 56px; padding-bottom: 56px; }.wish-prompt-section { width: 100%; padding: 30px 18px; }.heading-row { display: block; }.heading-row .text-link { margin-top: 15px; }.home-insight-header { display: block; }.home-insight-header .button { margin-top: 10px; width: 100%; }.match-strip, .activity-preview { grid-template-columns: 1fr; gap: 20px; }.match-visual { justify-content: start; }.activity-preview .badge { justify-self: start; } }
+
+@media (max-width: 700px) {
+	.home-requests-table th:nth-child(3),
+	.home-requests-table th:nth-child(4),
+	.home-requests-table td:nth-child(3),
+	.home-requests-table td:nth-child(4) {
+		display: none;
+	}
+
+	.home-upcoming-activities-table th:nth-child(3),
+	.home-upcoming-activities-table th:nth-child(4),
+	.home-upcoming-activities-table td:nth-child(3),
+	.home-upcoming-activities-table td:nth-child(4) {
+		display: none;
+	}
+}
