@@ -4,9 +4,9 @@ window.HesteVennConfig = {
   singular: { users: 'user', horses: 'horse', wishes: 'wish', requests: 'request', events: 'event', activities: 'activity', qualifications: 'qualification', incidents: 'incident' },
   descriptions: { users: 'Personer som eier hest, rir eller gjør begge deler.', horses: 'Hester og deres behov, egenskaper og stalltilhørighet.', wishes: 'Rideønsker fra Ryttere og ønsker om ryttere for hester.', requests: 'Forespørsler fra ryttere om å låne en hest på et bestemt tidspunkt.', events: 'Hestearrangementer som Ryttere kan opprette og delta på.', activities: 'Planlagte og gjennomførte aktiviteter mellom hest og rytter.', qualifications: 'Erfaringer og godkjenninger knyttet til en bruker og en hest.', incidents: 'Oppfølging av hendelser og helse rundt hestene.' },
   columns: {
-    users: [['name', 'Navn'], ['role', 'Rolle'], ['location', 'Fylke'], ['experienceLevel', 'Erfaringsnivå'], ['active', 'Aktiv']],
+    users: [['name', 'Navn'], ['role', 'Rolle'], ['profil', 'Profil'], ['location', 'Fylke'], ['experienceLevel', 'Erfaringsnivå'], ['active', 'Aktiv']],
     horses: [['name', 'Navn'], ['ownerId', 'Eier'], ['age', 'Alder'], ['breed', 'Rase'], ['location', 'Fylke'], ['experienceRequirement', 'Krever erfaring'], ['active', 'Aktiv']],
-    wishes: [['name', 'Ønske'], ['userId', 'Bruker'], ['horseId', 'Hest'], ['location', 'Fylke'], ['ønsketype', 'Ønsketype'], ['aktivitetstype', 'Aktivitetstype'], ['status', 'Status']],
+    wishes: [['name', 'Ønske'], ['userId', 'Bruker'], ['horseId', 'Hest'], ['location', 'Fylke'], ['address', 'Adresse'], ['ønsketype', 'Ønsketype'], ['aktivitetstype', 'Aktivitetstype'], ['status', 'Status']],
     requests: [['name', 'Forespørsel'], ['wishId', 'Ønske'], ['sender', 'Sender'], ['mottaker', 'Mottaker'], ['horseId', 'Hest'], ['date', 'Dato'], ['startTime', 'Tid'], ['durationHours', 'Varighet'], ['activityType', 'Aktivitet'], ['status', 'Status']],
     events: [['name', 'Navn'], ['location', 'Fylke'], ['date', 'Dato'], ['startTime', 'Tidspunkt'], ['qualifications', 'Kvalifikasjoner']],
     activities: [['name', 'Aktivitet'], ['horseId', 'Hest'], ['userId', 'Rytter'], ['date', 'Dato'], ['activityType', 'Type'], ['status', 'Status']],
@@ -14,7 +14,7 @@ window.HesteVennConfig = {
     incidents: [['name', 'Hendelse'], ['horseId', 'Hest'], ['date', 'Dato'], ['incidentType', 'Type'], ['severity', 'Alvorlighet'], ['status', 'Status']]
   },
   filters: {
-    users: [['role', 'Alle roller'], ['location', 'Alle fylker'], ['active', 'Alle statuser']],
+    users: [['role', 'Alle roller'], ['profil', 'Alle profiler'], ['location', 'Alle fylker'], ['active', 'Alle statuser']],
     horses: [['breed', 'Alle raser'], ['location', 'Alle fylker'], ['active', 'Alle statuser']],
     wishes: [['location', 'Alle fylker'], ['ønsketype', 'Alle ønsketyper'], ['status', 'Alle statuser']],
     requests: [['status', 'Alle statuser'], ['activityType', 'Alle aktiviteter']],
@@ -24,9 +24,9 @@ window.HesteVennConfig = {
     incidents: [['status', 'Alle statuser'], ['severity', 'Alle alvorlighetsgrader']]
   },
   detailFields: {
-    users: [['role', 'Rolle'], ['location', 'Fylke'], ['experienceLevel', 'Erfaringsnivå'], ['yearsOfExperience', 'År med erfaring'], ['email', 'E-post'], ['phone', 'Telefon'], ['biography', 'Biografi'], ['active', 'Aktiv']],
+    users: [['role', 'Rolle'], ['profil', 'Profil'], ['location', 'Fylke'], ['experienceLevel', 'Erfaringsnivå'], ['yearsOfExperience', 'År med erfaring'], ['email', 'E-post'], ['phone', 'Telefon'], ['biography', 'Biografi'], ['active', 'Aktiv']],
     horses: [['ownerId', 'Eier'], ['age', 'Alder'], ['breed', 'Rase'], ['gender', 'Kjønn'], ['height', 'Mankehøyde'], ['location', 'Fylke'], ['experienceRequirement', 'Krever erfaring'], ['temperament', 'Temperament'], ['suitableActivities', 'Passer til'], ['description', 'Beskrivelse'], ['active', 'Aktiv']],
-    wishes: [['userId', 'Bruker'], ['horseId', 'Hest'], ['location', 'Fylke'], ['størrelsePåHest', 'Størrelse på hest'], ['erfaring', 'Erfaring'], ['ønsketype', 'Ønsketype'], ['aktivitetstype', 'Aktivitetstype'], ['ridestil', 'Ridestil'], ['status', 'Status'], ['qualifications', 'Kvalifikasjoner'], ['comment', 'Kommentar']],
+    wishes: [['userId', 'Bruker'], ['horseId', 'Hest'], ['location', 'Fylke'], ['address', 'Adresse'], ['størrelsePåHest', 'Størrelse på hest'], ['erfaring', 'Erfaring'], ['ønsketype', 'Ønsketype'], ['aktivitetstype', 'Aktivitetstype'], ['ridestil', 'Ridestil'], ['status', 'Status'], ['qualifications', 'Kvalifikasjoner'], ['comment', 'Kommentar']],
     requests: [['wishId', 'Ønske'], ['sender', 'Sender'], ['mottaker', 'Mottaker'], ['horseId', 'Hest'], ['date', 'Dato'], ['startTime', 'Tidspunkt'], ['durationHours', 'Varighet (timer)'], ['activityType', 'Type aktivitet'], ['status', 'Forespørsel status'], ['comment', 'Kommentar']],
     events: [['organizerId', 'Arrangør'], ['location', 'Fylke'], ['date', 'Dato'], ['startTime', 'Tidspunkt'], ['qualifications', 'Kvalifikasjoner'], ['description', 'Beskrivelse'], ['participantIds', 'Deltakere']],
     activities: [['horseId', 'Hest'], ['userId', 'Sender'], ['mottaker', 'Mottaker'], ['activityType', 'Type'], ['date', 'Dato'], ['startTime', 'Starttid'], ['duration', 'Varighet'], ['location', 'Fylke'], ['status', 'Status'], ['notes', 'Notater']],
@@ -38,6 +38,7 @@ window.HesteVennConfig = {
     users: [
       { key: 'image', label: 'Profilbilde', type: 'image', wide: true },
       { key: 'name', label: 'Navn', required: true, autocomplete: 'name' }, { key: 'role', label: 'Rolle', type: 'select', required: true, options: ['Rytter', 'Hesteeier', 'Begge'] },
+      { key: 'profil', label: 'Profil', type: 'select', required: true, options: ['User', 'Premium User', 'Admin'], value: 'User' },
       { key: 'location', label: 'Fylke', required: true }, { key: 'experienceLevel', label: 'Erfaringsnivå', type: 'select', required: true, options: ['Nybegynner', 'Øvet', 'Erfaren'] },
       { key: 'yearsOfExperience', label: 'År med erfaring', type: 'number', required: true, min: 0, max: 80, value: 0 }, { key: 'email', label: 'E-post', type: 'email' },
       { key: 'phone', label: 'Telefon', type: 'tel' }, { key: 'biography', label: 'Biografi', type: 'textarea', wide: true }
@@ -54,6 +55,7 @@ window.HesteVennConfig = {
     wishes: [
       { key: 'name', label: 'Navn på ønsket', required: true }, { key: 'userId', label: 'Bruker', type: 'reference', source: 'users' },
       { key: 'horseId', label: 'Hest', type: 'reference', source: 'horses' }, { key: 'location', label: 'Fylke', required: true },
+      { key: 'address', label: 'Adresse', placeholder: 'For eksempel Stallveien 12, 4630 Kristiansand' },
       { key: 'størrelsePåHest', label: 'Størrelse på hest', type: 'select', required: true, options: ['Liten', 'Mellom', 'Stor'] },
       { key: 'erfaring', label: 'Erfaring', type: 'select', required: true, options: ['Nybegynner', 'Lett øvet', 'Erfaren', 'Profesjonell'] },
       { key: 'ønsketype', label: 'Ønsketype', type: 'select', required: true, options: ['Ønsker en rytter', 'Ønsker å Ri', 'Hest på fôr'] },

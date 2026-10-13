@@ -1,7 +1,8 @@
 window.HesteVennHelpers = function createHesteVennHelpers(context) {
-  const { data, singular, state } = context;
+  const { data, singular, state, recordIndex } = context;
 
   function getRecordById(type, id) {
+    if (recordIndex) return recordIndex.get(type, id);
     return (data[type] || []).find((record) => record.id === id);
   }
 
@@ -16,6 +17,7 @@ window.HesteVennHelpers = function createHesteVennHelpers(context) {
   }
 
   function objectTypeForId(id) {
+    if (recordIndex) return recordIndex.getType(id);
     return Object.keys(data).find((type) => getRecordById(type, id));
   }
 

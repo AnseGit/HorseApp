@@ -12,6 +12,12 @@
     console.error('HesteVennConfig mangler. Last inn app-config.js før script.js.');
     return;
   }
+  const recordIndexFactory = window.HesteVennRecordIndex;
+  if (!recordIndexFactory) {
+    console.error('HesteVennRecordIndex mangler. Last inn record-index.js før script.js.');
+    return;
+  }
+  const recordIndex = recordIndexFactory(data);
 
   const {
     idPrefixes,
@@ -25,15 +31,29 @@
     createFields
   } = config;
   const state = { search: '', selectedFilters: {}, wishFlow: {} };
+  const profilValues = ['Admin', 'Premium User', 'User'];
+  const searchDebounceMs = 180;
+  const searchCacheByType = new Map();
+  const dirtySearchTypes = new Set(Object.keys(data));
 
   function loadLocalRecords() {
     Object.keys(localStorageKeys).forEach((type) => {
+      let loadedAny = false;
       try {
         const records = JSON.parse(localStorage.getItem(localStorageKeys[type]) || '[]');
-        if (Array.isArray(records)) data[type].push(...records.filter((record) => record && record.id && record.name));
+        if (Array.isArray(records)) {
+          records
+            .filter((record) => record && record.id && record.name)
+            .forEach((record) => {
+              data[type].push(record);
+              recordIndex.upsert(type, record);
+              loadedAny = true;
+            });
+        }
       } catch (error) {
         console.warn(`Kunne ikke laste lokale ${labels[type].toLowerCase()}.`, error);
       }
+      if (loadedAny) markSearchCacheDirty(type);
     });
   }
 
@@ -53,10 +73,16 @@
     const edits = getSavedRecordEdits();
     Object.entries(edits).forEach(([type, recordsById]) => {
       if (!Array.isArray(data[type])) return;
+      let changed = false;
       Object.entries(recordsById || {}).forEach(([id, savedRecord]) => {
-        const existing = data[type].find((record) => record.id === id);
-        if (existing) Object.assign(existing, savedRecord);
+        const existing = recordIndex.get(type, id);
+        if (existing) {
+          Object.assign(existing, savedRecord);
+          recordIndex.upsert(type, existing);
+          changed = true;
+        }
       });
+      if (changed) markSearchCacheDirty(type);
     });
   }
 
@@ -65,6 +91,52 @@
     const localRecords = data[type].filter((item) => item.id.startsWith(prefix));
     localStorage.setItem(localStorageKeys[type], JSON.stringify([...localRecords, record]));
     data[type].push(record);
+    recordIndex.upsert(type, record);
+    markSearchCacheDirty(type);
+  }
+
+  function markSearchCacheDirty(type) {
+    if (!type) return;
+    dirtySearchTypes.add(type);
+  }
+
+  function valueToSearchText(value) {
+    if (value === null || value === undefined) return '';
+    if (Array.isArray(value)) return value.map((part) => valueToSearchText(part)).join(' ');
+    if (typeof value === 'object') return Object.values(value).map((part) => valueToSearchText(part)).join(' ');
+    return String(value);
+  }
+
+  function buildRecordSearchText(record) {
+    return Object.values(record || {}).map((value) => valueToSearchText(value)).join(' ').toLowerCase();
+  }
+
+  function ensureSearchCacheForType(type) {
+    if (!searchCacheByType.has(type) || dirtySearchTypes.has(type)) {
+      const index = new Map();
+      (data[type] || []).forEach((record) => {
+        if (!record?.id) return;
+        index.set(record.id, buildRecordSearchText(record));
+      });
+      searchCacheByType.set(type, index);
+      dirtySearchTypes.delete(type);
+    }
+  }
+
+  function getRecordSearchText(type, record) {
+    ensureSearchCacheForType(type);
+    const index = searchCacheByType.get(type);
+    if (!record?.id || !index) return '';
+    if (!index.has(record.id)) index.set(record.id, buildRecordSearchText(record));
+    return index.get(record.id) || '';
+  }
+
+  function debounce(callback, waitMs) {
+    let timerId = 0;
+    return (...args) => {
+      window.clearTimeout(timerId);
+      timerId = window.setTimeout(() => callback(...args), waitMs);
+    };
   }
 
   function generateNextRequestName() {
@@ -137,6 +209,31 @@
     return user;
   }
 
+  function getProfil(user) {
+    const role = String(user?.profil || user?.brukerRolle || 'User').trim();
+    return profilValues.includes(role) ? role : 'User';
+  }
+
+  function isAdmin(user) {
+    return getProfil(user) === 'Admin';
+  }
+
+  function canCreateRecord(type, user) {
+    if (!user) return false;
+    if (isAdmin(user)) return true;
+    const role = getProfil(user);
+    if (type === 'users') return false;
+    if (['events', 'qualifications', 'incidents'].includes(type)) return role === 'Premium User';
+    return true;
+  }
+
+  function normalizeUserProfiler() {
+    data.users.forEach((user) => {
+      user.profil = getProfil(user);
+      delete user.brukerRolle;
+    });
+  }
+
   function hasActiveWishForUser(userId) {
     if (!userId) return false;
     return data.wishes.some((wish) => {
@@ -163,6 +260,7 @@
 
   function canEditRecord(type, record, user) {
     if (!user || !record) return false;
+    if (isAdmin(user)) return true;
     if (type === 'users') return record.id === user.id;
     if (type === 'horses') return record.ownerId === user.id;
     if (type === 'wishes') return isWishOwnedByUser(record, user.id);
@@ -215,6 +313,7 @@
     const prefix = `${idPrefixes[type]}-LOCAL-`;
     const localRecords = data[type].filter((item) => item.id.startsWith(prefix));
     localStorage.setItem(localStorageKeys[type], JSON.stringify(localRecords));
+    markSearchCacheDirty(type);
   }
 
   function updateRequestStatus(requestId, status) {
@@ -287,7 +386,7 @@
       if (wish.status !== 'Aktiv' || ownWishIds.has(wish.id)) return false;
       return ownActiveWishes.some((mine) => oppositeByType[mine.ønsketype] === wish.ønsketype && mine.location === wish.location && mine.erfaring === wish.erfaring);
     });
-    const incomingRequests = data.requests.filter((request) => request.sender === currentUser.id || request.mottaker === currentUser.id);
+    const incomingRequests = data.requests.filter((request) => (request.sender === currentUser.id || request.mottaker === currentUser.id) && request.status !== 'Avslått');
     const upcomingActivities = upcomingActivitiesForUser(currentUser.id);
     const hasIncomingRequests = incomingRequests.length > 0;
     const hasUpcomingActivities = upcomingActivities.length > 0;
@@ -319,8 +418,14 @@
     const action = document.querySelector('[data-auth-action]');
     const notificationAction = document.querySelector('[data-notification-action]');
     const notificationCount = document.querySelector('[data-notification-count]');
+    const myHorsesAction = document.querySelector('[data-my-horses-action]');
     action.textContent = user ? `Logg ut (${user.name})` : 'Logg inn';
     action.href = user ? '#logout' : '#login';
+    if (myHorsesAction) {
+      const ownsHorse = Boolean(user && data.horses.some((horse) => horse.ownerId === user.id));
+      myHorsesAction.hidden = !ownsHorse;
+      myHorsesAction.href = ownsHorse ? `#user/${encodeURIComponent(user.id)}/horses` : '#home';
+    }
     if (notificationAction && notificationCount) {
       if (!user) {
         notificationAction.hidden = true;
@@ -332,6 +437,18 @@
         notificationCount.textContent = unread;
       }
     }
+    updateAdminOnlyTabs();
+  }
+
+  function updateAdminOnlyTabs() {
+    const user = getCurrentUser();
+    const canSeeAdminTabs = Boolean(user && isAdmin(user));
+    ['users', 'horses'].forEach((type) => {
+      document.querySelectorAll(`[data-object="${type}"]`).forEach((link) => {
+        link.hidden = !canSeeAdminTabs;
+        if (!canSeeAdminTabs) link.classList.remove('is-active');
+      });
+    });
   }
 
   function renderHome() {
@@ -387,17 +504,36 @@
     uniqueValues,
     normalizeFilterValue,
     matchesFilters
-  } = helperFactory({ data, singular, state });
+  } = helperFactory({ data, singular, state, recordIndex });
+
+  function getFilteredRecordsForList(type) {
+    const query = state.search.toLowerCase().trim();
+    return data[type].filter((record) => matchesFilters(type, record) && (!query || getRecordSearchText(type, record).includes(query)));
+  }
+
+  function renderObjectListRows(type) {
+    const body = document.querySelector('#record-table-body');
+    const count = document.querySelector('#list-count');
+    const emptyState = document.querySelector('#record-empty-state');
+    if (!body || !count || !emptyState) return;
+
+    const records = getFilteredRecordsForList(type);
+    const rows = records.map((record) => `<tr>${columns[type].map(([key]) => `<td>${renderCell(type, key, record[key], record)}</td>`).join('')}</tr>`).join('');
+    body.innerHTML = rows;
+    count.textContent = `${records.length} av ${data[type].length} poster`;
+    emptyState.hidden = records.length !== 0;
+  }
 
   function renderObjectList(type) {
-    const query = state.search.toLowerCase().trim();
-    const records = data[type].filter((record) => matchesFilters(type, record) && (!query || Object.values(record).join(' ').toLowerCase().includes(query)));
+    const currentUser = getCurrentUser();
     const filterMarkup = (filters[type] || []).map(([key, label]) => `<label class="filter"><span>${label}</span><select data-filter-key="${key}"><option value="">${label}</option>${uniqueValues(type, key).map((value) => `<option value="${escapeHtml(value)}" ${state.selectedFilters[key] === value ? 'selected' : ''}>${escapeHtml(value)}</option>`).join('')}</select></label>`).join('');
     const tableHead = columns[type].map(([, label]) => `<th scope="col">${label}</th>`).join('');
-    const rows = records.map((record) => `<tr>${columns[type].map(([key]) => `<td>${renderCell(type, key, record[key], record)}</td>`).join('')}</tr>`).join('');
-    const createAction = `<a class="button" href="#new-${singular[type]}">+ Legg Til</a>`;
-    app.innerHTML = `<section class="page-heading"><div><p class="eyebrow">Objekt · ${labels[type]}</p><h1>${labels[type]}</h1><p class="lede">${descriptions[type]}</p></div><div class="page-actions">${createAction}</div></section><section class="list-panel"><div class="list-toolbar"><div><strong>${records.length} av ${data[type].length} poster</strong><span class="toolbar-note"> · lokale data</span></div><label class="search-field"><span class="sr-only">Søk i ${labels[type]}</span><span aria-hidden="true">⌕</span><input type="search" id="record-search" placeholder="Søk i poster" value="${escapeHtml(state.search)}"></label><div class="filters">${filterMarkup}</div></div><div class="table-wrap"><table><thead><tr>${tableHead}</tr></thead><tbody>${rows}</tbody></table></div>${records.length ? '' : '<div class="empty-state"><span aria-hidden="true">⌕</span><h2>Ingen poster funnet</h2><p>Prøv et annet søk eller fjern et filter.</p></div>'}</section>`;
+    const createAction = canCreateRecord(type, currentUser)
+      ? `<a class="button" href="#new-${singular[type]}">+ Legg Til</a>`
+      : '';
+    app.innerHTML = `<section class="page-heading"><div><p class="eyebrow">Objekt · ${labels[type]}</p><h1>${labels[type]}</h1><p class="lede">${descriptions[type]}</p></div><div class="page-actions">${createAction}</div></section><section class="list-panel"><div class="list-toolbar"><div><strong id="list-count">0 av ${data[type].length} poster</strong><span class="toolbar-note"> · lokale data</span></div><label class="search-field"><span class="sr-only">Søk i ${labels[type]}</span><span aria-hidden="true">⌕</span><input type="search" id="record-search" placeholder="Søk i poster" value="${escapeHtml(state.search)}"></label><div class="filters">${filterMarkup}</div></div><div class="table-wrap"><table><thead><tr>${tableHead}</tr></thead><tbody id="record-table-body"></tbody></table></div><div class="empty-state" id="record-empty-state" hidden><span aria-hidden="true">⌕</span><h2>Ingen poster funnet</h2><p>Prøv et annet søk eller fjern et filter.</p></div></section>`;
     bindListEvents(type);
+    renderObjectListRows(type);
   }
   function renderLogin() {
     const currentUser = getCurrentUser();
@@ -424,6 +560,7 @@
     return {
       ønsketype: '',
       location: currentUser?.location || '',
+      address: '',
       erfaring: 'Nybegynner',
       aktivitetstype: 'Ukentlig',
       størrelsePåHest: 'Mellom',
@@ -439,6 +576,11 @@
     return state.wishFlow;
   }
   function renderCreateWishFlowStep1() {
+    const currentUser = getCurrentUser();
+    if (!canCreateRecord('wishes', currentUser)) {
+      window.location.hash = '#login';
+      return;
+    }
     state.wishFlow = createWishFlowDefaults();
     app.innerHTML = `<a class="back-link" href="#home">← Til Min Side</a><section class="page-heading"><div><p class="eyebrow">Opprett Ønske · 1 av 3</p><h1>Velg ønsketype</h1><p class="lede">Start med å fortelle om du ønsker å ri, ønsker en rytter eller ønsker hest på fôr.</p></div></section><form class="profile-form detail-panel" id="wish-flow-step-1"><div class="form-grid"><label class="form-wide"><span>Ønsketype</span><select name="ønsketype" required><option value="">Velg ønsketype</option><option value="Ønsker å Ri">Ønsker å Ri</option><option value="Ønsker en rytter">Ønsker en rytter</option><option value="Hest på fôr">Hest på fôr</option></select></label></div><div class="form-actions"><a class="button button-secondary" href="#home">Avbryt</a><button class="button" type="submit">Neste</button></div></form>`;
     document.querySelector('#wish-flow-step-1').addEventListener('submit', (event) => {
@@ -462,7 +604,7 @@
     const horseField = needsHorse
       ? `<label><span>Hest</span><select name="horseId" required><option value="">${ownHorses.length ? 'Velg hest' : 'Ingen hester knyttet til profilen din'}</option>${ownHorses.map((horse) => `<option value="${escapeHtml(horse.id)}" ${flow.horseId === horse.id ? 'selected' : ''}>${escapeHtml(horse.name)} · ${escapeHtml(horse.location)}</option>`).join('')}</select></label>`
       : '';
-    app.innerHTML = `<a class="back-link" href="#create-wish">← Tilbake</a><section class="page-heading"><div><p class="eyebrow">Opprett Ønske · 2 av 3</p><h1>${escapeHtml(flow.ønsketype)}</h1><p class="lede">Svar på spørsmålene under for å opprette ønsket ditt.</p></div></section><form class="profile-form detail-panel" id="wish-flow-step-2"><div class="form-grid"><label><span>Fylke</span><input name="location" required value="${escapeHtml(flow.location)}"></label><label><span>Erfaring</span><select name="erfaring" required><option value="Nybegynner" ${flow.erfaring === 'Nybegynner' ? 'selected' : ''}>Nybegynner</option><option value="Lett øvet" ${flow.erfaring === 'Lett øvet' ? 'selected' : ''}>Lett øvet</option><option value="Erfaren" ${flow.erfaring === 'Erfaren' ? 'selected' : ''}>Erfaren</option><option value="Profesjonell" ${flow.erfaring === 'Profesjonell' ? 'selected' : ''}>Profesjonell</option></select></label><label><span>Aktivitetstype</span><select name="aktivitetstype" required><option value="Engangstilfelle" ${flow.aktivitetstype === 'Engangstilfelle' ? 'selected' : ''}>Engangstilfelle</option><option value="Månedlig" ${flow.aktivitetstype === 'Månedlig' ? 'selected' : ''}>Månedlig</option><option value="Ukentlig" ${flow.aktivitetstype === 'Ukentlig' ? 'selected' : ''}>Ukentlig</option><option value="Daglig" ${flow.aktivitetstype === 'Daglig' ? 'selected' : ''}>Daglig</option><option value="Periode" ${flow.aktivitetstype === 'Periode' ? 'selected' : ''}>Periode</option></select></label><label><span>Størrelse på hest</span><select name="størrelsePåHest" required><option value="Liten" ${flow.størrelsePåHest === 'Liten' ? 'selected' : ''}>Liten</option><option value="Mellom" ${flow.størrelsePåHest === 'Mellom' ? 'selected' : ''}>Mellom</option><option value="Stor" ${flow.størrelsePåHest === 'Stor' ? 'selected' : ''}>Stor</option></select></label><label><span>Ridestil</span><select name="ridestil" required><option value="Tur" ${flow.ridestil === 'Tur' ? 'selected' : ''}>Tur</option><option value="Dressur" ${flow.ridestil === 'Dressur' ? 'selected' : ''}>Dressur</option><option value="Sprang" ${flow.ridestil === 'Sprang' ? 'selected' : ''}>Sprang</option><option value="Fôr" ${flow.ridestil === 'Fôr' ? 'selected' : ''}>Fôr</option></select></label>${horseField}<label class="form-wide"><span>Kvalifikasjoner</span><input name="qualifications" value="${escapeHtml(flow.qualifications)}" placeholder="For eksempel Trygg på tur, Grunnleggende håndtering"></label><label class="form-wide"><span>Kommentar</span><textarea name="comment" rows="5">${escapeHtml(flow.comment)}</textarea></label></div><div class="form-actions"><a class="button button-secondary" href="#create-wish">Tilbake</a><button class="button" type="submit">Opprett ønske</button></div><p class="form-error" role="alert" hidden></p></form>`;
+    app.innerHTML = `<a class="back-link" href="#create-wish">← Tilbake</a><section class="page-heading"><div><p class="eyebrow">Opprett Ønske · 2 av 3</p><h1>${escapeHtml(flow.ønsketype)}</h1><p class="lede">Svar på spørsmålene under for å opprette ønsket ditt.</p></div></section><form class="profile-form detail-panel" id="wish-flow-step-2"><div class="form-grid"><label><span>Fylke</span><input name="location" required value="${escapeHtml(flow.location)}"></label><label><span>Adresse</span><input name="address"${needsHorse ? ' required' : ''} value="${escapeHtml(flow.address)}" placeholder="For eksempel Stallveien 12, 4630 Kristiansand"></label><label><span>Erfaring</span><select name="erfaring" required><option value="Nybegynner" ${flow.erfaring === 'Nybegynner' ? 'selected' : ''}>Nybegynner</option><option value="Lett øvet" ${flow.erfaring === 'Lett øvet' ? 'selected' : ''}>Lett øvet</option><option value="Erfaren" ${flow.erfaring === 'Erfaren' ? 'selected' : ''}>Erfaren</option><option value="Profesjonell" ${flow.erfaring === 'Profesjonell' ? 'selected' : ''}>Profesjonell</option></select></label><label><span>Aktivitetstype</span><select name="aktivitetstype" required><option value="Engangstilfelle" ${flow.aktivitetstype === 'Engangstilfelle' ? 'selected' : ''}>Engangstilfelle</option><option value="Månedlig" ${flow.aktivitetstype === 'Månedlig' ? 'selected' : ''}>Månedlig</option><option value="Ukentlig" ${flow.aktivitetstype === 'Ukentlig' ? 'selected' : ''}>Ukentlig</option><option value="Daglig" ${flow.aktivitetstype === 'Daglig' ? 'selected' : ''}>Daglig</option><option value="Periode" ${flow.aktivitetstype === 'Periode' ? 'selected' : ''}>Periode</option></select></label><label><span>Størrelse på hest</span><select name="størrelsePåHest" required><option value="Liten" ${flow.størrelsePåHest === 'Liten' ? 'selected' : ''}>Liten</option><option value="Mellom" ${flow.størrelsePåHest === 'Mellom' ? 'selected' : ''}>Mellom</option><option value="Stor" ${flow.størrelsePåHest === 'Stor' ? 'selected' : ''}>Stor</option></select></label><label><span>Ridestil</span><select name="ridestil" required><option value="Tur" ${flow.ridestil === 'Tur' ? 'selected' : ''}>Tur</option><option value="Dressur" ${flow.ridestil === 'Dressur' ? 'selected' : ''}>Dressur</option><option value="Sprang" ${flow.ridestil === 'Sprang' ? 'selected' : ''}>Sprang</option><option value="Fôr" ${flow.ridestil === 'Fôr' ? 'selected' : ''}>Fôr</option></select></label>${horseField}<label class="form-wide"><span>Kvalifikasjoner</span><input name="qualifications" value="${escapeHtml(flow.qualifications)}" placeholder="For eksempel Trygg på tur, Grunnleggende håndtering"></label><label class="form-wide"><span>Kommentar</span><textarea name="comment" rows="5">${escapeHtml(flow.comment)}</textarea></label></div><div class="form-actions"><a class="button button-secondary" href="#create-wish">Tilbake</a><button class="button" type="submit">Opprett ønske</button></div><p class="form-error" role="alert" hidden></p></form>`;
     const buildWishAutoName = (wishType, currentUser, selectedHorseId, formValues) => {
       const firstName = String(currentUser?.name || '').trim().split(/\s+/).filter(Boolean)[0] || 'Bruker';
       const horseName = selectedHorseId ? getHorseName(selectedHorseId) : '';
@@ -502,6 +644,7 @@
         userId,
         horseId,
         location: values.location.trim(),
+        address: String(values.address || '').trim(),
         størrelsePåHest: values.størrelsePåHest,
         erfaring: values.erfaring,
         ønsketype: wishType,
@@ -607,8 +750,9 @@
     }
     const fields = (createFields[type] || []).filter((field) => field.type !== 'image');
     const lockedWishFields = type === 'wishes' ? new Set(['userId', 'ønsketype']) : new Set();
+    const lockedUserRoleFields = type === 'users' && !isAdmin(currentUser) ? new Set(['profil']) : new Set();
     const returnUrl = `#${singular[type]}/${encodeURIComponent(id)}${returnTab ? `/${returnTab}` : ''}`;
-    app.innerHTML = `<a class="back-link" href="${returnUrl}">← Tilbake</a><section class="page-heading"><div><p class="eyebrow">Rediger post</p><h1>Endre ${escapeHtml(record.name)}</h1><p class="lede">Oppdater feltene under og lagre endringene.</p></div></section><form class="profile-form detail-panel" id="edit-form"><div class="form-grid">${fields.map((field) => renderEditField(field, record, lockedWishFields.has(field.key))).join('')}</div><div class="form-actions"><a class="button button-secondary" href="${returnUrl}">Avbryt</a><button class="button" type="submit">Lagre endringer</button></div><p class="form-error" role="alert" hidden></p></form>`;
+    app.innerHTML = `<a class="back-link" href="${returnUrl}">← Tilbake</a><section class="page-heading"><div><p class="eyebrow">Rediger post</p><h1>Endre ${escapeHtml(record.name)}</h1><p class="lede">Oppdater feltene under og lagre endringene.</p></div></section><form class="profile-form detail-panel" id="edit-form"><div class="form-grid">${fields.map((field) => renderEditField(field, record, lockedWishFields.has(field.key) || lockedUserRoleFields.has(field.key))).join('')}</div><div class="form-actions"><a class="button button-secondary" href="${returnUrl}">Avbryt</a><button class="button" type="submit">Lagre endringer</button></div><p class="form-error" role="alert" hidden></p></form>`;
     document.querySelector('#edit-form').addEventListener('submit', (event) => {
       event.preventDefault();
       const form = event.currentTarget;
@@ -616,6 +760,7 @@
       fields.filter((field) => field.array).forEach((field) => { values[field.key] = String(values[field.key] || '').split(',').map((part) => part.trim()).filter(Boolean); });
       fields.filter((field) => field.type === 'number').forEach((field) => { values[field.key] = Number(values[field.key]); });
       Object.keys(values).forEach((key) => { if (typeof values[key] === 'string') values[key] = values[key].trim(); });
+      if (type === 'users' && !isAdmin(currentUser)) values.profil = getProfil(record);
       if (type === 'wishes' && Boolean(values.userId) === Boolean(values.horseId)) {
         const message = form.querySelector('.form-error');
         message.textContent = 'Velg enten én bruker eller én hest for ønsket.';
@@ -630,6 +775,11 @@
     updateNavigation(type);
   }
   function renderCreateForm(type, contextType, contextId, returnTab) {
+    const currentUser = getCurrentUser();
+    if (!canCreateRecord(type, currentUser)) {
+      app.innerHTML = '<div class="empty-state"><h2>Ingen tilgang</h2><p>Du har ikke tilgang til å opprette denne typen post.</p></div>';
+      return;
+    }
     const fields = createFields[type];
     const presets = relationPresets(type, contextType, contextId);
     const contextRecord = contextType ? getRecordById(contextType, contextId) : null;
@@ -641,11 +791,13 @@
       const wishTypeSelect = form.querySelector('[name="ønsketype"]');
       const horseSelect = form.querySelector('[name="horseId"]');
       const horseField = horseSelect ? horseSelect.closest('label') : null;
+      const addressInput = form.querySelector('[name="address"]');
       const toggleHorseField = () => {
         if (!wishTypeSelect || !horseField || !horseSelect) return;
         const needsHorse = wishTypeSelect.value === 'Ønsker en rytter';
         horseField.hidden = !needsHorse;
         horseSelect.required = needsHorse;
+        if (addressInput) addressInput.required = needsHorse;
         if (!needsHorse) horseSelect.value = '';
       };
       if (wishTypeSelect && horseField && horseSelect) {
@@ -668,8 +820,8 @@
       fields.filter((field) => field.array).forEach((field) => { values[field.key] = values[field.key].split(',').map((value) => value.trim()).filter(Boolean); });
       fields.filter((field) => field.type === 'number').forEach((field) => { values[field.key] = Number(values[field.key]); });
       Object.keys(values).forEach((key) => { if (typeof values[key] === 'string') values[key] = values[key].trim(); });
+      if (type === 'users') values.profil = 'User';
       if (type === 'requests') {
-        const currentUser = getCurrentUser();
         if (!values.sender && currentUser) values.sender = currentUser.id;
         if (!values.userId && values.sender) values.userId = values.sender;
         if (!values.mottaker && values.wishId) {
@@ -722,8 +874,10 @@
     const supportsImage = type === 'users' || type === 'horses';
     const imageSource = supportsImage ? getProfileImage(record) : '';
     const profileMedia = supportsImage ? `<div class="profile-media">${imageSource ? `<img src="${escapeHtml(imageSource)}" alt="${escapeHtml(record.name)}">` : `<div class="profile-image-placeholder" aria-hidden="true">${type === 'horses' ? '♞' : escapeHtml(record.name.charAt(0))}</div>`}<label class="image-upload-button"><span>${imageSource ? 'Bytt bilde' : 'Legg til bilde'}</span><input type="file" accept="image/jpeg,image/png,image/webp" data-profile-image></label><p class="image-upload-error" role="alert" hidden></p></div>` : '';
-    const createRelated = tabs.length && tab && tab !== 'details' ? `<div class="related-toolbar"><div><strong>${labels[relationKey]}</strong><span>${related[relationKey].length} poster relatert til ${escapeHtml(record.name)}</span></div><a class="button" href="#new-${singular[relationKey]}/${singular[type]}/${encodeURIComponent(id)}/${tab}">+ Legg Til</a></div>` : '';
     const currentUser = getCurrentUser();
+    const createRelated = tabs.length && tab && tab !== 'details' && canCreateRecord(relationKey, currentUser)
+      ? `<div class="related-toolbar"><div><strong>${labels[relationKey]}</strong><span>${related[relationKey].length} poster relatert til ${escapeHtml(record.name)}</span></div><a class="button" href="#new-${singular[relationKey]}/${singular[type]}/${encodeURIComponent(id)}/${tab}">+ Legg Til</a></div>`
+      : '';
     const participants = type === 'events' ? getEventParticipants(record) : [];
     const eventRecord = type === 'events' ? { ...record, participantIds: participants } : record;
     const visibleDetailFields = type === 'wishes'
@@ -750,9 +904,9 @@
       if (canProposeNewTime) requestActionButtons.push('<button class="button button-secondary" type="button" data-open-reschedule-form>Foreslå nytt tidspunkt</button>');
     }
     const requestAction = type === 'horses'
-      ? `<a class="button" href="#new-request/horse/${encodeURIComponent(id)}/requests">Legg til forespørsel</a>`
+      ? (canCreateRecord('requests', currentUser) ? `<a class="button" href="#new-request/horse/${encodeURIComponent(id)}/requests">Legg til forespørsel</a>` : '')
       : type === 'wishes'
-        ? (isOwnWish ? '' : `<a class="button" href="#new-request/wish/${encodeURIComponent(id)}/requests">Send forespørsel</a>`)
+        ? (isOwnWish || !canCreateRecord('requests', currentUser) ? '' : `<a class="button" href="#new-request/wish/${encodeURIComponent(id)}/requests">Send forespørsel</a>`)
         : type === 'requests' && currentUser
           ? (requestActionButtons.length ? `<div class="inline-actions">${requestActionButtons.join('')}</div>` : '')
           : '';
@@ -858,15 +1012,15 @@
     });
   }
   function bindListEvents(type) {
+    const debouncedRenderRows = debounce(() => renderObjectListRows(type), searchDebounceMs);
     document.querySelector('#record-search').addEventListener('input', (event) => {
-      const caret = event.target.selectionStart;
       state.search = event.target.value;
-      renderObjectList(type);
-      const search = document.querySelector('#record-search');
-      search.focus();
-      search.setSelectionRange(caret, caret);
+      debouncedRenderRows();
     });
-    document.querySelectorAll('[data-filter-key]').forEach((select) => select.addEventListener('change', (event) => { state.selectedFilters[event.target.dataset.filterKey] = event.target.value; renderObjectList(type); }));
+    document.querySelectorAll('[data-filter-key]').forEach((select) => select.addEventListener('change', (event) => {
+      state.selectedFilters[event.target.dataset.filterKey] = event.target.value;
+      renderObjectListRows(type);
+    }));
   }
   function csvValue(value) { return `"${String(Array.isArray(value) ? value.join('; ') : value ?? '').replaceAll('"', '""').replace(/\r?\n/g, ' ')}"`; }
   function exportObjectToCsv(type) {
@@ -962,7 +1116,27 @@
     const type = labels[parts[0]] ? parts[0] : Object.keys(singular).find((key) => singular[key] === parts[0]);
     if (type && data[type]) {
       const isFilterRoute = parts[1] === 'filter';
-      navigateToRecord(type, isFilterRoute ? null : (parts[1] ? decodeURIComponent(parts[1]) : null), isFilterRoute ? null : parts[2], isFilterRoute ? parts.slice(1) : []);
+      const recordId = isFilterRoute ? null : (parts[1] ? decodeURIComponent(parts[1]) : null);
+      if (type === 'users') {
+        const currentUser = getCurrentUser();
+        if (!currentUser) {
+          window.location.hash = '#login';
+          return;
+        }
+        const canAccessOwnProfile = Boolean(recordId && recordId === currentUser.id);
+        if (!isAdmin(currentUser) && !canAccessOwnProfile) {
+          window.location.hash = '#home';
+          return;
+        }
+      }
+      if (type === 'horses') {
+        const currentUser = getCurrentUser();
+        if (!currentUser || !isAdmin(currentUser)) {
+          window.location.hash = '#home';
+          return;
+        }
+      }
+      navigateToRecord(type, recordId, isFilterRoute ? null : parts[2], isFilterRoute ? parts.slice(1) : []);
     } else {
       window.location.hash = '#home';
     }
@@ -976,6 +1150,7 @@
   window.addEventListener('hashchange', renderRoute);
   loadLocalRecords();
   applySavedRecordEdits();
+  normalizeUserProfiler();
   updateAuthAction();
   renderRoute();
 }());
