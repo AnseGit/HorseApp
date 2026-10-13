@@ -13,17 +13,19 @@
       <a class="logo" href="#home" aria-label="HesteVenn, hjem"><span aria-hidden="true">✦</span> HesteVenn</a>
       <button class="menu-toggle" type="button" aria-expanded="false" aria-controls="nav-links">Meny <span aria-hidden="true">☰</span></button>
       <div class="nav-links" id="nav-links">
-        <a href="#home" data-home="true">Min Side</a>
-        <a href="#users" data-object="users">Ryttere</a>
-        <a href="#horses" data-object="horses">Hester</a>
-        <a href="#wishes" data-object="wishes">Ønsker</a>
-        <a href="#requests" data-object="requests">Forespørsler</a>
-        <a href="#events" data-object="events">Arrangementer</a>
-        <a href="#min-profil">Min brukerprofil</a>
-        <a href="#home" data-my-horses-action hidden>Mine Hester</a>
+        <a href="#home" data-home="true" data-auth-only>Min Side</a>
+        <a href="#users" data-object="users" data-auth-only>Ryttere</a>
+        <a href="#horses" data-object="horses" data-auth-only>Hester</a>
+        <a href="#wishes" data-object="wishes" data-auth-only>Ønsker</a>
+        <a href="#requests" data-object="requests" data-auth-only>Forespørsler</a>
+        <a href="#events" data-object="events" data-auth-only>Arrangementer</a>
+        <a href="#min-profil" data-auth-only>Min brukerprofil</a>
+        <a href="#home" data-my-horses-action data-auth-only hidden>Mine Hester</a>
+        <a href="#faq" data-loggedout-only>FAQ</a>
+        <a href="#om-oss" data-loggedout-only>Om Oss</a>
         <a class="login-action nav-auth-link" href="#login" data-auth-action>Logg inn</a>
       </div>
-      <a class="notification-action" href="#notifications" data-notification-action aria-label="Varsler"><span aria-hidden="true">🔔</span><span class="notification-count" data-notification-count hidden>0</span></a>
+      <a class="notification-action" href="#notifications" data-notification-action aria-label="Varsler" hidden><span aria-hidden="true">🔔</span><span class="notification-count" data-notification-count hidden>0</span></a>
     </nav>
   </header>
   <main id="app" class="app-shell container" aria-live="polite"></main>

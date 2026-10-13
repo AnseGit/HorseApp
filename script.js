@@ -192,7 +192,7 @@
     saveLocalRecord('activities', activity);
   }
 
-  function renderHomeInsights(currentUser) {
+  function renderHomeInsights(currentUser, showWishPrompt = false) {
     if (!currentUser) return '';
     const ownWishes = wishesOwnedByUser(currentUser.id);
     const ownActiveWishes = ownWishes.filter((wish) => wish.status === 'Aktiv');
@@ -223,18 +223,30 @@
     const eventsBody = localEvents.length
       ? `<div class="table-wrap"><table><thead><tr><th scope="col">Arrangement</th><th scope="col">Dato</th><th scope="col">Tid</th></tr></thead><tbody>${localEvents.map((event) => `<tr><td>${lookupLink(event.id, 'events')}</td><td>${escapeHtml(formatValue('date', event.date))}</td><td>${escapeHtml(event.startTime)}</td></tr>`).join('')}</tbody></table></div>`
       : '<div class="empty-state compact"><h3>Ingen arrangementer i ditt fylke akkurat nå.</h3></div>';
+    const wishPromptInline = showWishPrompt
+      ? '<section class="wish-prompt-section"><div class="section-heading"><p class="eyebrow">Kom i gang</p><h2>Begynn reisen din med et ønske</h2><p class="lede">Du kan opprette ønsket ditt her, eller i panelet «Mine ønsker» lenger ned på siden.</p></div><a class="button" href="#create-wish"><span aria-hidden="true">✦</span> Opprett Ønske</a></section>'
+      : '';
     const requestsActivitiesSection = hasIncomingRequests || hasUpcomingActivities
       ? `<div class="home-insights-grid home-insights-grid-mid"><article class="home-insight-card"><h3>Mine forespørsler</h3>${incomingRequestsBody}</article><article class="home-insight-card"><h3>Mine kommende aktiviteter</h3>${upcomingActivitiesBody}</article></div>`
       : '';
-    return `<section class="home-section home-insights-section"><div class="section-heading"><h2>Hei ${escapeHtml(currentUser.name)}</h2><p class="lede">Se relevante ønsker, forespørsler og arrangementer i nærheten.</p></div><article class="home-insight-card home-insight-card-full"><h3>Matchende ønsker</h3>${matchingWishBody}</article>${requestsActivitiesSection}<div class="home-insights-grid home-insights-grid-bottom"><article class="home-insight-card"><h3>Arrangementer i samme fylke</h3>${eventsBody}</article><article class="home-insight-card">${ownWishesBody}</article></div></section>`;
+    return `<section class="home-section home-insights-section"><div class="section-heading"><h2>Hei ${escapeHtml(currentUser.name)}</h2><p class="lede">Se relevante ønsker, forespørsler og arrangementer i nærheten.</p></div>${wishPromptInline}<article class="home-insight-card home-insight-card-full"><h3>Matchende ønsker</h3>${matchingWishBody}</article>${requestsActivitiesSection}<div class="home-insights-grid home-insights-grid-bottom"><article class="home-insight-card"><h3>Arrangementer i samme fylke</h3>${eventsBody}</article><article class="home-insight-card">${ownWishesBody}</article></div></section>`;
   }
 
   function updateAuthAction() {
     const user = getCurrentUser();
+    const isLoggedIn = Boolean(user);
     const action = document.querySelector('[data-auth-action]');
     const notificationAction = document.querySelector('[data-notification-action]');
     const notificationCount = document.querySelector('[data-notification-count]');
     const myHorsesAction = document.querySelector('[data-my-horses-action]');
+    document.querySelectorAll('[data-loggedout-only]').forEach((link) => {
+      link.hidden = isLoggedIn;
+      if (isLoggedIn) link.classList.remove('is-active');
+    });
+    document.querySelectorAll('[data-auth-only]').forEach((link) => {
+      link.hidden = !isLoggedIn;
+      if (!isLoggedIn) link.classList.remove('is-active');
+    });
     action.textContent = user ? `Logg ut (${user.name})` : 'Logg inn';
     action.href = user ? '#logout' : '#login';
     if (myHorsesAction) {
@@ -273,31 +285,26 @@
     const horses = [...(horsePool.length ? horsePool : data.horses)].sort(() => Math.random() - .5).slice(0, 3);
     const upcomingActivities = currentUser ? upcomingActivitiesForUser(currentUser.id) : [];
     const nextActivity = upcomingActivities[0] || null;
-    const locationFilter = currentUser ? `/filter/location/${encodeURIComponent(currentUser.location)}` : '';
-    const homeInsightsSection = renderHomeInsights(currentUser);
     const showWishPrompt = Boolean(currentUser) && !hasActiveWishForUser(currentUser.id);
-    const wishPromptSection = showWishPrompt
-      ? '<section class="home-section wish-prompt-section"><div class="section-heading"><p class="eyebrow">Kom i gang</p><h2>Begynn reisen din med et ønske</h2><p class="lede">Du kan opprette ønsket ditt her, eller i panelet «Mine ønsker» lenger ned på siden.</p></div><a class="button" href="#create-wish"><span aria-hidden="true">✦</span> Opprett Ønske</a></section>'
-      : '';
+    const homeInsightsSection = renderHomeInsights(currentUser, showWishPrompt);
     const nextActivitySection = currentUser && nextActivity
       ? `<section class="home-section activity-preview"><div><p class="eyebrow">Et glimt av hverdagen</p><h2>Neste aktivitet</h2><p>${escapeHtml(nextActivity.name)}</p></div><div class="activity-preview-details"><div><span>Hest</span><a href="#horse/${nextActivity.horseId}">${escapeHtml(getHorseName(nextActivity.horseId))}</a></div><div><span>Rytter</span><a href="#user/${nextActivity.userId}">${escapeHtml(getUserName(nextActivity.userId))}</a></div><div><span>Når</span><strong>${escapeHtml(nextActivity.date)} · ${escapeHtml(nextActivity.startTime || '—')}</strong></div><div><span>Fylke</span><strong>${escapeHtml(nextActivity.location)}</strong></div></div><span class="badge">${escapeHtml(nextActivity.status || 'Planlagt')}</span></section>`
       : '';
     const choiceSection = currentUser
       ? ''
-      : `<section class="home-section"><div class="section-heading"><h2>Hva passer best for deg?</h2></div><div class="choice-grid"><a class="choice-card choice-owner" href="#wishes/filter/ønsketype/%C3%98nsker%20%C3%A5%20Ri"><span class="choice-icon" aria-hidden="true">♞</span><strong>Jeg har hest</strong><p>Finn en rytter${currentUser ? ` i ${escapeHtml(currentUser.location)}` : ''} som passer din hest.</p><span class="choice-link">Finn en rytter →</span></a><a class="choice-card choice-rider" href="#wishes/filter/ønsketype/%C3%98nsker%20en%20rytter"><span class="choice-icon" aria-hidden="true">⌁</span><strong>Jeg ønsker å ri</strong><p>Finn en hest${currentUser ? ` i ${escapeHtml(currentUser.location)}` : ''} som passer din erfaring og rideønske.</p><span class="choice-link">Utforsk hester →</span></a><a class="choice-card choice-event" href="#events${locationFilter}"><span class="choice-icon" aria-hidden="true">◎</span><strong>Utforsk arrangementer</strong><p>Finn arrangementer${currentUser ? ` i ${escapeHtml(currentUser.location)}` : ' i nærheten'} og møt andre hestevenner.</p><span class="choice-link">Se arrangementer →</span></a></div></section>`;
+      : `<section class="home-section"><div class="section-heading"><h2>Hva passer best for deg?</h2></div><div class="choice-grid"><a class="choice-card choice-owner" href="#login/har-hest"><span class="choice-icon" aria-hidden="true">♞</span><strong>Jeg har hest</strong><p>Finn en rytter${currentUser ? ` i ${escapeHtml(currentUser.location)}` : ''} som passer din hest.</p><span class="choice-link">Finn en rytter →</span></a><a class="choice-card choice-rider" href="#login/vil-ri"><span class="choice-icon" aria-hidden="true">⌁</span><strong>Jeg ønsker å ri</strong><p>Finn en hest${currentUser ? ` i ${escapeHtml(currentUser.location)}` : ''} som passer din erfaring og rideønske.</p><span class="choice-link">Utforsk hester →</span></a><a class="choice-card choice-event" href="#login/arrangementer"><span class="choice-icon" aria-hidden="true">◎</span><strong>Utforsk arrangementer</strong><p>Finn arrangementer${currentUser ? ` i ${escapeHtml(currentUser.location)}` : ' i nærheten'} og møt andre hestevenner.</p><span class="choice-link">Se arrangementer →</span></a></div></section>`;
     const howSection = currentUser
       ? ''
-      : '<section class="home-section how-section"><div class="section-heading centered"><p class="eyebrow">Enkelt å utforske</p><h2>Slik fungerer HesteVenn</h2></div><div class="steps"><article><span class="step-number">01</span><span class="step-icon" aria-hidden="true">◎</span><h3>Opprett en profil</h3><p>Fortell om hesten din, eller del erfaringen og det du liker å gjøre i salen.</p></article><article><span class="step-number">02</span><span class="step-icon" aria-hidden="true">⌕</span><h3>Finn en passende hest eller rytter</h3><p>Utforsk profiler som passer med hverdagen, nivået og ønskene dine.</p></article><article><span class="step-number">03</span><span class="step-icon" aria-hidden="true">✦</span><h3>Avtal en aktivitet</h3><p>Finn en god ramme for første tur, økt eller møte i stallen.</p></article></div></section>';
+      : '<section class="home-section how-section"><div class="section-heading centered"><p class="eyebrow">Enkelt å utforske</p><h2>Slik fungerer HesteVenn</h2></div><div class="steps"><article><div class="step-meta"><span class="step-number">1</span><span class="step-icon" aria-hidden="true">◎</span></div><h3>Opprett en profil</h3><p>Fortell om hesten din, eller del erfaringen og det du liker å gjøre i salen.</p></article><article><div class="step-meta"><span class="step-number">2</span><span class="step-icon" aria-hidden="true">⌕</span></div><h3>Finn en passende hest eller rytter</h3><p>Utforsk profiler som passer med hverdagen, nivået og ønskene dine.</p></article><article><div class="step-meta"><span class="step-number">3</span><span class="step-icon" aria-hidden="true">✦</span></div><h3>Avtal en aktivitet</h3><p>Finn en god ramme for første tur, økt eller møte i stallen.</p></article></div></section>';
     const relatedHorse = currentUser ? data.horses.find((horse) => horse.ownerId === currentUser.id) : null;
     const relatedHorseImage = relatedHorse ? getProfileImage(relatedHorse) : '';
     const heroVisual = relatedHorseImage ? `<div class="hero-mark hero-mark-image"><img src="${escapeHtml(relatedHorseImage)}" alt="${escapeHtml(relatedHorse.name)}"></div>` : '<div class="hero-mark" aria-hidden="true">♞<span>✦</span></div>';
     app.innerHTML = `<div class="home-page">
       <section class="home-hero"><div><p class="eyebrow">Velkommen til HesteVenn</p><h1>Gode dager med hest begynner med riktig match.</h1><p class="lede">Finn en trygg hestevenn, en passende rytter eller neste aktivitet i nærheten.</p></div>${heroVisual}</section>
-      ${wishPromptSection}
       ${nextActivitySection}
       ${homeInsightsSection}
       ${choiceSection}
-      <section class="home-section nearby-section"><div class="section-heading heading-row"><div><p class="eyebrow">Noen hester i nærheten</p><h2>Møt din neste turkamerat</h2></div><a class="text-link" href="#horses">Se alle hester →</a></div><div class="home-horse-grid">${horses.map((horse) => `<article class="home-horse-card"><div class="home-horse-art" aria-hidden="true">♞</div><div class="home-horse-content"><div class="home-horse-title"><h3>${escapeHtml(horse.name)}</h3><span>${horse.age} år</span></div><p>${escapeHtml(horse.breed)} · ${escapeHtml(horse.location)}</p><dl><div><dt>Passer for</dt><dd>${escapeHtml(horse.suitableActivities.join(' og '))}</dd></div><div><dt>Ønsket erfaring</dt><dd>${escapeHtml(horse.experienceRequirement)}</dd></div></dl><a class="button button-outline" href="#horse/${horse.id}">Se profil</a></div></article>`).join('')}</div></section>
+      <section class="home-section nearby-section"><div class="section-heading heading-row"><div><p class="eyebrow">Noen hester i nærheten</p><h2>Møt din neste turkamerat</h2></div><a class="text-link" href="${currentUser ? '#horses' : '#login/se-alle-hester'}">Se alle hester →</a></div><div class="home-horse-grid">${horses.map((horse) => `<article class="home-horse-card"><div class="home-horse-art" aria-hidden="true">♞</div><div class="home-horse-content"><div class="home-horse-title"><h3>${escapeHtml(horse.name)}</h3><span>${horse.age} år</span></div><p>${escapeHtml(horse.breed)} · ${escapeHtml(horse.location)}</p><dl><div><dt>Passer for</dt><dd>${escapeHtml(horse.suitableActivities.join(' og '))}</dd></div><div><dt>Ønsket erfaring</dt><dd>${escapeHtml(horse.experienceRequirement)}</dd></div></dl><a class="button button-outline" href="${currentUser ? `#horse/${horse.id}` : '#login/se-hesteprofil'}">Se profil</a></div></article>`).join('')}</div></section>
       ${howSection}
     </div>`;
   }
@@ -446,9 +453,18 @@
     updateNavigation
   });
 
-  function renderLogin() {
+  function renderLogin(intent = '') {
     const currentUser = getCurrentUser();
-    app.innerHTML = `<a class="back-link" href="#home">← Til Min Side</a><section class="page-heading"><div><p class="eyebrow">Lokal innlogging</p><h1>Logg inn</h1><p class="lede">Velg en bruker. Passord er ikke nødvendig i denne prototypen.</p></div></section><form class="profile-form detail-panel" id="login-form"><div class="form-grid"><label class="form-wide"><span>Bruker</span><select name="userId" required><option value="">Velg bruker</option>${data.users.filter((user) => user.active).map((user) => `<option value="${escapeHtml(user.id)}" ${currentUser && currentUser.id === user.id ? 'selected' : ''}>${escapeHtml(user.name)} · ${escapeHtml(user.location)}</option>`).join('')}</select></label></div><div class="form-actions"><a class="button button-secondary" href="#home">Avbryt</a><button class="button" type="submit">Logg inn</button></div></form>`;
+    const loginLedeByIntent = {
+      'har-hest': 'Logg inn for å finne en rytter som passer din hest.',
+      'vil-ri': 'Logg inn for å finne en hest som passer din erfaring og rideønske.',
+      arrangementer: 'Logg inn for å utforske arrangementer og møte andre hestevenner.',
+      'se-alle-hester': 'Logg inn for å se alle hester i nærheten.',
+      'se-hesteprofil': 'Logg inn for å se hesteprofilen og finne en passende turkamerat.'
+    };
+    const normalizedIntent = String(intent || '').trim().toLowerCase();
+    const loginLede = loginLedeByIntent[normalizedIntent] || 'Velg en bruker. Passord er ikke nødvendig i denne prototypen.';
+    app.innerHTML = `<a class="back-link" href="#home">← Til Min Side</a><section class="page-heading"><div><p class="eyebrow">Lokal innlogging</p><h1>Logg inn</h1><p class="lede">${escapeHtml(loginLede)}</p></div></section><form class="profile-form detail-panel" id="login-form"><div class="form-grid"><label class="form-wide"><span>Bruker</span><select name="userId" required><option value="">Velg bruker</option>${data.users.filter((user) => user.active).map((user) => `<option value="${escapeHtml(user.id)}" ${currentUser && currentUser.id === user.id ? 'selected' : ''}>${escapeHtml(user.name)} · ${escapeHtml(user.location)}</option>`).join('')}</select></label></div><div class="form-actions"><a class="button button-secondary" href="#home">Avbryt</a><a class="button button-secondary" href="#register-user">Registrer Bruker</a><button class="button" type="submit">Logg inn</button></div></form>`;
     document.querySelector('#login-form').addEventListener('submit', (event) => {
       event.preventDefault();
       setCurrentUserId(new FormData(event.currentTarget).get('userId'));
@@ -457,6 +473,44 @@
     });
     updateNavigation('', true);
   }
+
+  function renderRegisterUser() {
+    app.innerHTML = `<a class="back-link" href="#login">← Til Logg inn</a><section class="page-heading"><div><p class="eyebrow">Ny bruker</p><h1>Registrer Bruker</h1><p class="lede">Opprett en brukerprofil for å komme i gang. Profil settes automatisk til User og Aktiv settes til Ja.</p></div></section><form class="profile-form detail-panel" id="register-user-form"><div class="form-grid"><label><span>Navn</span><input name="name" required placeholder="For eksempel Ola Nordmann"></label><label><span>Rolle</span><select name="role" required><option value="Rytter">Rytter</option><option value="Hesteeier">Hesteeier</option><option value="Begge">Begge</option></select></label><label><span>Fylke</span><input name="location" required placeholder="For eksempel Agder"></label><label><span>År med erfaring</span><input name="yearsOfExperience" type="number" min="0" max="80" step="1" value="0"></label><label><span>Telefon</span><input name="phone" type="tel" placeholder="+47 400 00 000"></label><label><span>Erfaringsnivå</span><select name="experienceLevel" required><option value="">Velg nivå</option><option value="Nybegynner">Nybegynner</option><option value="Øvet">Øvet</option><option value="Erfaren">Erfaren</option></select></label><label class="form-wide"><span>Biografi</span><textarea name="biography" rows="4" placeholder="Fortell kort om erfaringen din"></textarea></label></div><div class="form-actions"><a class="button button-secondary" href="#login">Avbryt</a><button class="button" type="submit">Opprett bruker</button></div><p class="form-error" role="alert" hidden></p></form>`;
+
+    document.querySelector('#register-user-form').addEventListener('submit', (event) => {
+      event.preventDefault();
+      const values = Object.fromEntries(new FormData(event.currentTarget));
+      const message = event.currentTarget.querySelector('.form-error');
+      const name = String(values.name || '').trim();
+      const location = String(values.location || '').trim();
+      const experienceLevel = String(values.experienceLevel || '').trim();
+      if (!name || !location || !experienceLevel) {
+        message.textContent = 'Navn, Fylke og Erfaringsnivå er obligatoriske felter.';
+        message.hidden = false;
+        return;
+      }
+      const years = Number(values.yearsOfExperience);
+      const record = {
+        id: `${idPrefixes.users}-LOCAL-${Date.now()}`,
+        name,
+        role: String(values.role || 'Rytter').trim(),
+        profil: 'User',
+        location,
+        experienceLevel,
+        yearsOfExperience: Number.isFinite(years) && years >= 0 ? years : 0,
+        phone: String(values.phone || '').trim(),
+        biography: String(values.biography || '').trim(),
+        active: true
+      };
+      saveLocalRecord('users', record);
+      setCurrentUserId(record.id);
+      updateAuthAction();
+      window.location.hash = '#home';
+    });
+
+    updateNavigation('', true);
+  }
+
   function renderNotifications() {
     const currentUser = getCurrentUser();
     if (!currentUser) { window.location.hash = '#login'; return; }
@@ -503,7 +557,11 @@
       return;
     }
     if (parts[0] === 'login') {
-      renderLogin();
+      renderLogin(parts[1] ? decodeURIComponent(parts[1]) : '');
+      return;
+    }
+    if (parts[0] === 'register-user') {
+      renderRegisterUser();
       return;
     }
     if (parts[0] === 'notifications') {

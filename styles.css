@@ -137,6 +137,28 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .home-insights-grid-bottom {
 	margin-top: 20px;
 }
+.step-meta {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: 10px;
+	margin: 0 auto 10px;
+	color: var(--forest);
+}
+.steps article {
+	text-align: center;
+}
+.steps .step-number {
+	display: inline-block;
+	font: 700 1.4rem Arial, sans-serif;
+	line-height: 1;
+}
+.steps .step-icon {
+	display: inline-block;
+	font-size: 1.55rem;
+	line-height: 1;
+	color: var(--clay);
+}
 .choice-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .choice-event { background: #e8e3d8; }
 
