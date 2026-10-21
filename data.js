@@ -81,5 +81,7 @@ window.HesteVennData = {
     { id: 'INCIDENT-001', name: 'Liten skramme på venstre kode', horseId: 'HORSE-001', date: '2026-08-12', incidentType: 'Skade', severity: 'Lav', description: 'Overflatisk skramme etter beiting.', actionTaken: 'Renset og fulgt opp daglig.', status: 'Lukket' },
     { id: 'INCIDENT-002', name: 'Uro ved lasting', horseId: 'HORSE-004', date: '2026-07-18', incidentType: 'Atferd', severity: 'Middels', description: 'Solstjerne ble urolig ved lasting.', actionTaken: 'Treningsplan med korte økter.', status: 'Under oppfølging' },
     { id: 'INCIDENT-003', name: 'Stivhet etter trening', horseId: 'HORSE-016', date: '2026-09-02', incidentType: 'Helse', severity: 'Middels', description: 'Noe stiv i bakparten dagen etter økt.', actionTaken: 'Hvile og avtalt oppfølging.', status: 'Åpen' }
-  ]
+  ],
+  conversations: [],
+  messages: []
 };

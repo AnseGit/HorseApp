@@ -10,6 +10,7 @@ window.HesteVennListViews = function createHesteVennListViews(context) {
     filters,
     getCurrentUser,
     canCreateRecord,
+    canViewRecord = () => true,
     escapeHtml,
     uniqueValues,
     renderCell,
@@ -66,7 +67,13 @@ window.HesteVennListViews = function createHesteVennListViews(context) {
 
   function getFilteredRecordsForList(type) {
     const query = state.search.toLowerCase().trim();
-    return data[type].filter((record) => matchesFilters(type, record) && (!query || getRecordSearchText(type, record).includes(query)));
+    const currentUser = getCurrentUser();
+    return data[type].filter((record) => canViewRecord(type, record, currentUser) && matchesFilters(type, record) && (!query || getRecordSearchText(type, record).includes(query)));
+  }
+
+  function getVisibleRecordsForList(type) {
+    const currentUser = getCurrentUser();
+    return data[type].filter((record) => canViewRecord(type, record, currentUser));
   }
 
   function renderObjectListRows(type) {
@@ -76,9 +83,10 @@ window.HesteVennListViews = function createHesteVennListViews(context) {
     if (!body || !count || !emptyState) return;
 
     const records = getFilteredRecordsForList(type);
+    const visibleRecords = getVisibleRecordsForList(type);
     const rows = records.map((record) => `<tr>${columns[type].map(([key]) => `<td>${renderCell(type, key, record[key], record)}</td>`).join('')}</tr>`).join('');
     body.innerHTML = rows;
-    count.textContent = `${records.length} av ${data[type].length} poster`;
+    count.textContent = `${records.length} av ${visibleRecords.length} poster`;
     emptyState.hidden = records.length !== 0;
   }
 
@@ -96,12 +104,13 @@ window.HesteVennListViews = function createHesteVennListViews(context) {
 
   function renderObjectList(type) {
     const currentUser = getCurrentUser();
+    const visibleRecords = getVisibleRecordsForList(type);
     const filterMarkup = (filters[type] || []).map(([key, label]) => `<label class="filter"><span>${label}</span><select data-filter-key="${key}"><option value="">${label}</option>${uniqueValues(type, key).map((value) => `<option value="${escapeHtml(value)}" ${state.selectedFilters[key] === value ? 'selected' : ''}>${escapeHtml(value)}</option>`).join('')}</select></label>`).join('');
     const tableHead = columns[type].map(([, label]) => `<th scope="col">${label}</th>`).join('');
     const createAction = canCreateRecord(type, currentUser)
       ? `<a class="button" href="#new-${singular[type]}">+ Legg Til</a>`
       : '';
-    app.innerHTML = `<section class="page-heading"><div><p class="eyebrow">Objekt · ${labels[type]}</p><h1>${labels[type]}</h1><p class="lede">${descriptions[type]}</p></div><div class="page-actions">${createAction}</div></section><section class="list-panel"><div class="list-toolbar"><div><strong id="list-count">0 av ${data[type].length} poster</strong><span class="toolbar-note"> · lokale data</span></div><label class="search-field"><span class="sr-only">Søk i ${labels[type]}</span><span aria-hidden="true">⌕</span><input type="search" id="record-search" placeholder="Søk i poster" value="${escapeHtml(state.search)}"></label><div class="filters">${filterMarkup}</div></div><div class="table-wrap"><table><thead><tr>${tableHead}</tr></thead><tbody id="record-table-body"></tbody></table></div><div class="empty-state" id="record-empty-state" hidden><span aria-hidden="true">⌕</span><h2>Ingen poster funnet</h2><p>Prøv et annet søk eller fjern et filter.</p></div></section>`;
+    app.innerHTML = `<section class="page-heading"><div><p class="eyebrow">Objekt · ${labels[type]}</p><h1>${labels[type]}</h1><p class="lede">${descriptions[type]}</p></div><div class="page-actions">${createAction}</div></section><section class="list-panel"><div class="list-toolbar"><div><strong id="list-count">0 av ${visibleRecords.length} poster</strong><span class="toolbar-note"> · lokale data</span></div><label class="search-field"><span class="sr-only">Søk i ${labels[type]}</span><span aria-hidden="true">⌕</span><input type="search" id="record-search" placeholder="Søk i poster" value="${escapeHtml(state.search)}"></label><div class="filters">${filterMarkup}</div></div><div class="table-wrap"><table><thead><tr>${tableHead}</tr></thead><tbody id="record-table-body"></tbody></table></div><div class="empty-state" id="record-empty-state" hidden><span aria-hidden="true">⌕</span><h2>Ingen poster funnet</h2><p>Prøv et annet søk eller fjern et filter.</p></div></section>`;
     bindListEvents(type);
     renderObjectListRows(type);
   }

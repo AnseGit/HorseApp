@@ -1,7 +1,7 @@
 window.HesteVennConfig = {
-  idPrefixes: { users: 'USER', horses: 'HORSE', wishes: 'WISH', requests: 'REQUEST', events: 'EVENT', activities: 'ACTIVITY', qualifications: 'QUALIFICATION', incidents: 'INCIDENT' },
+  idPrefixes: { users: 'USER', horses: 'HORSE', wishes: 'WISH', requests: 'REQUEST', events: 'EVENT', activities: 'ACTIVITY', qualifications: 'QUALIFICATION', incidents: 'INCIDENT', conversations: 'CONVERSATION', messages: 'MESSAGE' },
   labels: { users: 'Ryttere', horses: 'Hester', wishes: 'Ønsker', requests: 'Forespørsler', events: 'Arrangementer', activities: 'Aktiviteter', qualifications: 'Kvalifikasjoner', incidents: 'Hendelser' },
-  singular: { users: 'user', horses: 'horse', wishes: 'wish', requests: 'request', events: 'event', activities: 'activity', qualifications: 'qualification', incidents: 'incident' },
+  singular: { users: 'user', horses: 'horse', wishes: 'wish', requests: 'request', events: 'event', activities: 'activity', qualifications: 'qualification', incidents: 'incident', conversations: 'conversation', messages: 'message' },
   descriptions: { users: 'Personer som eier hest, rir eller gjør begge deler.', horses: 'Hester og deres behov, egenskaper og stalltilhørighet.', wishes: 'Rideønsker fra Ryttere og ønsker om ryttere for hester.', requests: 'Forespørsler fra ryttere om å låne en hest på et bestemt tidspunkt.', events: 'Hestearrangementer som Ryttere kan opprette og delta på.', activities: 'Planlagte og gjennomførte aktiviteter mellom hest og rytter.', qualifications: 'Erfaringer og godkjenninger knyttet til en bruker og en hest.', incidents: 'Oppfølging av hendelser og helse rundt hestene.' },
   columns: {
     users: [['name', 'Navn'], ['role', 'Rolle'], ['profil', 'Profil'], ['location', 'Fylke'], ['experienceLevel', 'Erfaringsnivå'], ['active', 'Aktiv']],

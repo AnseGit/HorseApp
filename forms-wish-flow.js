@@ -257,8 +257,58 @@ function renderEditForm(type, id, returnTab) {
 }
 function renderCreateForm(type, contextType, contextId, returnTab) {
   const currentUser = getCurrentUser();
-  if (!canCreateRecord(type, currentUser)) {
+  const canCreateQualificationOnOwnProfile = Boolean(type === 'qualifications' && contextType === 'users' && currentUser && contextId === currentUser.id);
+  if (!canCreateRecord(type, currentUser) && !canCreateQualificationOnOwnProfile) {
     app.innerHTML = '<div class="empty-state"><h2>Ingen tilgang</h2><p>Du har ikke tilgang til å opprette denne typen post.</p></div>';
+    return;
+  }
+  if (type === 'requests' && contextType === 'wishes' && contextId) {
+    const wish = getRecordById('wishes', contextId);
+    if (!wish) {
+      window.location.hash = '#wishes';
+      return;
+    }
+    const horse = wish.horseId ? getRecordById('horses', wish.horseId) : null;
+    const receiverId = wish.userId || horse?.ownerId || '';
+    const returnUrl = `#wish/${encodeURIComponent(contextId)}`;
+    app.innerHTML = `<a class="back-link" href="${returnUrl}">← Tilbake</a><section class="page-heading"><div><p class="eyebrow">Ny forespørsel</p><h1>Send forespørsel</h1><p class="lede">Velg dato og tidspunkt. Resten fylles inn automatisk fra ønsket.</p></div></section><div class="modal-backdrop"><form class="profile-form detail-panel modal-card" id="quick-request-form"><div class="section-heading"><p class="eyebrow">Ønske</p><h2>${escapeHtml(wish.name || 'Uten navn')}</h2></div><div class="form-grid"><label><span>Dato</span><input name="date" type="date" required></label><label><span>Tidspunkt</span><input name="startTime" type="time" required></label><label class="form-wide"><span>Kommentar (valgfritt)</span><textarea name="comment" rows="3" placeholder="Legg til ekstra informasjon om forespørselen..."></textarea></label></div><div class="form-actions"><a class="button button-secondary" href="${returnUrl}">Avbryt</a><button class="button" type="submit">Send forespørsel</button></div><p class="form-error" role="alert" hidden></p></form></div>`;
+    document.querySelector('#quick-request-form').addEventListener('submit', (event) => {
+      event.preventDefault();
+      const values = Object.fromEntries(new FormData(event.currentTarget));
+      const message = event.currentTarget.querySelector('.form-error');
+      const date = String(values.date || '').trim();
+      const startTime = String(values.startTime || '').trim();
+      const comment = String(values.comment || '').trim();
+      if (!date || !startTime) {
+        message.textContent = 'Velg både dato og tidspunkt.';
+        message.hidden = false;
+        return;
+      }
+      if (!receiverId) {
+        message.textContent = 'Kunne ikke finne mottaker for dette ønsket.';
+        message.hidden = false;
+        return;
+      }
+      const record = {
+        id: `${idPrefixes.requests}-LOCAL-${Date.now()}`,
+        name: generateNextRequestName(),
+        wishId: contextId,
+        horseId: wish.horseId || '',
+        sender: currentUser?.id || '',
+        userId: currentUser?.id || '',
+        mottaker: receiverId,
+        date,
+        startTime,
+        durationHours: 1,
+        activityType: wish.ridestil || 'Tur',
+        status: 'Under behandling',
+        comment
+      };
+      saveLocalRecord('requests', record);
+      if (record.mottaker) addNotification(record.mottaker, `Ny forespørsel mottatt: ${record.name}.`, `#request/${encodeURIComponent(record.id)}`);
+      window.location.hash = `#request/${encodeURIComponent(record.id)}`;
+    });
+    updateNavigation('requests');
     return;
   }
   const fields = createFields[type];

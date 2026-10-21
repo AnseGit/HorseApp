@@ -39,14 +39,15 @@ window.HesteVennPersistence = function createHesteVennPersistence(context) {
       const records = loadJson(localStorageKeys[type], []);
       if (Array.isArray(records)) {
         records
-          .filter((record) => record && record.id && record.name)
+          .filter((record) => record && record.id)
           .forEach((record) => {
             data[type].push(record);
             recordIndex.upsert(type, record);
             loadedAny = true;
           });
       } else {
-        console.warn(`Kunne ikke laste lokale ${labels[type].toLowerCase()}.`);
+        const label = String(labels[type] || type).toLowerCase();
+        console.warn(`Kunne ikke laste lokale ${label}.`);
       }
       if (loadedAny) markTypeChanged(type);
     });

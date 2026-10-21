@@ -1,6 +1,7 @@
 (function () {
   const data = window.HesteVennData;
   const app = document.querySelector('#app');
+  const infoPages = window.HesteVennInfoPages || {};
   const config = window.HesteVennConfig;
   if (!config) {
     console.error('HesteVennConfig mangler. Last inn app-config.js før script.js.');
@@ -157,6 +158,16 @@
     return false;
   }
 
+  function canViewRecord(type, record, user) {
+    if (!record) return false;
+    if (type === 'requests') {
+      if (!user) return false;
+      if (isAdmin(user)) return true;
+      return record.sender === user.id || record.mottaker === user.id;
+    }
+    return true;
+  }
+
   function wishesOwnedByUser(userId) {
     return data.wishes.filter((wish) => isWishOwnedByUser(wish, userId));
   }
@@ -223,7 +234,9 @@
 
   function renderHomeInsights(currentUser, showWishPrompt = false) {
     if (!currentUser) return '';
+    const maxHomeRows = 5;
     const ownWishes = wishesOwnedByUser(currentUser.id);
+    const ownWishesPreview = ownWishes.slice(0, maxHomeRows);
     const ownActiveWishes = ownWishes.filter((wish) => wish.status === 'Aktiv');
     const ownWishIds = new Set(ownWishes.map((wish) => wish.id));
     const oppositeByType = { 'Ønsker en rytter': 'Ønsker å Ri', 'Ønsker å Ri': 'Ønsker en rytter' };
@@ -231,34 +244,56 @@
       if (wish.status !== 'Aktiv' || ownWishIds.has(wish.id)) return false;
       return ownActiveWishes.some((mine) => oppositeByType[mine.ønsketype] === wish.ønsketype && mine.location === wish.location && mine.erfaring === wish.erfaring);
     });
+    const matchingWishesPreview = matchingWishes.slice(0, maxHomeRows);
     const incomingRequests = data.requests.filter((request) => (request.sender === currentUser.id || request.mottaker === currentUser.id) && request.status !== 'Avslått');
+    const incomingRequestsPreview = incomingRequests.slice(0, maxHomeRows);
     const upcomingActivities = upcomingActivitiesForUser(currentUser.id);
+    const upcomingActivitiesPreview = upcomingActivities.slice(0, maxHomeRows);
     const hasIncomingRequests = incomingRequests.length > 0;
     const hasUpcomingActivities = upcomingActivities.length > 0;
     const localEvents = data.events.filter((event) => event.location === currentUser.location);
-    const ownWishesHeader = '<div class="home-insight-header"><h3>Mine ønsker</h3><a class="button" href="#create-wish"><span aria-hidden="true">✦</span> Opprett Ønske</a></div>';
+    const localEventsPreview = localEvents.slice(0, maxHomeRows);
+    const homeRowLink = (type, id) => `#${singular[type]}/${encodeURIComponent(id)}`;
+    const ownWishesHeader = '<div class="home-insight-header"><h3>Mine ønsker</h3><div class="home-insight-actions"><a class="button button-secondary" href="#wishes">Se alle ønsker</a><a class="button" href="#create-wish"><span aria-hidden="true">✦</span> Opprett Ønske</a></div></div>';
     const ownWishesBody = ownWishes.length
-      ? `${ownWishesHeader}<div class="table-wrap"><table><thead><tr><th scope="col">Ønske</th><th scope="col">Erfaring</th><th scope="col">Status</th></tr></thead><tbody>${ownWishes.map((wish) => `<tr><td>${lookupLink(wish.id, 'wishes')}</td><td>${escapeHtml(wish.erfaring)}</td><td><span class="badge badge-${String(wish.status).toLowerCase().replaceAll(' ', '-')}">${escapeHtml(wish.status)}</span></td></tr>`).join('')}</tbody></table></div>`
+      ? `${ownWishesHeader}<div class="table-wrap"><table><thead><tr><th scope="col">Ønske</th><th scope="col">Erfaring</th><th scope="col">Status</th></tr></thead><tbody>${ownWishesPreview.map((wish) => `<tr class="clickable-row" role="link" tabindex="0" data-row-href="${homeRowLink('wishes', wish.id)}"><td>${lookupLink(wish.id, 'wishes')}</td><td>${escapeHtml(wish.erfaring)}</td><td><span class="badge badge-${String(wish.status).toLowerCase().replaceAll(' ', '-')}">${escapeHtml(wish.status)}</span></td></tr>`).join('')}</tbody></table></div>`
       : `${ownWishesHeader}<div class="empty-state compact"><h3>Du har ingen ønsker registrert ennå.</h3></div>`;
     const matchingWishBody = matchingWishes.length
-      ? `<div class="table-wrap"><table><thead><tr><th scope="col">Ønske</th><th scope="col">Erfaring</th><th scope="col">Fylke</th></tr></thead><tbody>${matchingWishes.map((wish) => `<tr><td>${lookupLink(wish.id, 'wishes')}</td><td>${escapeHtml(wish.erfaring)}</td><td>${escapeHtml(wish.location)}</td></tr>`).join('')}</tbody></table></div>`
+      ? `<div class="home-insight-header"><h3>Matchende ønsker</h3><div class="home-insight-actions"><a class="button button-secondary" href="#wishes">Se alle ønsker</a></div></div><div class="table-wrap"><table><thead><tr><th scope="col">Ønske</th><th scope="col">Erfaring</th><th scope="col">Fylke</th></tr></thead><tbody>${matchingWishesPreview.map((wish) => `<tr class="clickable-row" role="link" tabindex="0" data-row-href="${homeRowLink('wishes', wish.id)}"><td>${lookupLink(wish.id, 'wishes')}</td><td>${escapeHtml(wish.erfaring)}</td><td>${escapeHtml(wish.location)}</td></tr>`).join('')}</tbody></table></div>`
       : '<div class="empty-state compact"><h3>Ingen matchende ønsker tilgjengelig for øyeblikket.</h3></div>';
     const incomingRequestsBody = incomingRequests.length
-      ? `<div class="table-wrap home-requests-table-wrap"><table class="home-requests-table"><thead><tr><th scope="col">Forespørsel</th><th scope="col">Ønske</th><th scope="col">Rolle</th><th scope="col">Status</th></tr></thead><tbody>${incomingRequests.map((request) => { const isReceiver = request.mottaker === currentUser.id; return `<tr><td>${lookupLink(request.id, 'requests')}</td><td>${request.wishId ? lookupLink(request.wishId, 'wishes') : '—'}</td><td>${isReceiver ? 'Mottaker' : 'Sender'}</td><td><span class="badge badge-${String(request.status).toLowerCase().replaceAll(' ', '-')}">${escapeHtml(request.status)}</span></td></tr>`; }).join('')}</tbody></table></div>`
+      ? `<div class="home-insight-header"><h3>Mine forespørsler</h3><div class="home-insight-actions"><a class="button button-secondary" href="#requests">Se alle forespørsler</a></div></div><div class="table-wrap home-requests-table-wrap"><table class="home-requests-table"><thead><tr><th scope="col">Forespørsel</th><th scope="col">Ønske</th><th scope="col">Rolle</th><th scope="col">Status</th></tr></thead><tbody>${incomingRequestsPreview.map((request) => { const isReceiver = request.mottaker === currentUser.id; const relatedWish = request.wishId ? getRecordById('wishes', request.wishId) : null; return `<tr class="clickable-row" role="link" tabindex="0" data-row-href="${homeRowLink('requests', request.id)}"><td>${lookupLink(request.id, 'requests')}</td><td>${relatedWish ? escapeHtml(relatedWish.name) : '—'}</td><td>${isReceiver ? 'Mottaker' : 'Sender'}</td><td><span class="badge badge-${String(request.status).toLowerCase().replaceAll(' ', '-')}">${escapeHtml(request.status)}</span></td></tr>`; }).join('')}</tbody></table></div>`
       : '<div class="empty-state compact"><h3>Ingen forespørsler tilgjengelig for øyeblikket.</h3></div>';
     const upcomingActivitiesBody = upcomingActivities.length
-      ? `<div class="table-wrap home-upcoming-activities-table-wrap"><table class="home-upcoming-activities-table"><thead><tr><th scope="col">Aktivitet</th><th scope="col">Dato</th><th scope="col">Tid</th><th scope="col">Hest</th></tr></thead><tbody>${upcomingActivities.map((activity) => `<tr><td>${lookupLink(activity.id, 'activities')}</td><td>${escapeHtml(formatValue('date', activity.date))}</td><td>${escapeHtml(activity.startTime || '—')}</td><td>${activity.horseId ? lookupLink(activity.horseId, 'horses') : '—'}</td></tr>`).join('')}</tbody></table></div>`
+      ? `<div class="home-insight-header"><h3>Mine kommende aktiviteter</h3><div class="home-insight-actions"><a class="button button-secondary" href="#activities">Se alle aktiviteter</a></div></div><div class="table-wrap home-upcoming-activities-table-wrap"><table class="home-upcoming-activities-table"><thead><tr><th scope="col">Aktivitet</th><th scope="col">Dato</th><th scope="col">Tid</th><th scope="col">Hest</th></tr></thead><tbody>${upcomingActivitiesPreview.map((activity) => { const horse = activity.horseId ? getRecordById('horses', activity.horseId) : null; return `<tr class="clickable-row" role="link" tabindex="0" data-row-href="${homeRowLink('activities', activity.id)}"><td>${lookupLink(activity.id, 'activities')}</td><td>${escapeHtml(formatValue('date', activity.date))}</td><td>${escapeHtml(activity.startTime || '—')}</td><td>${horse ? escapeHtml(horse.name) : '—'}</td></tr>`; }).join('')}</tbody></table></div>`
       : '<div class="empty-state compact"><h3>Ingen kommende aktiviteter akkurat nå.</h3></div>';
     const eventsBody = localEvents.length
-      ? `<div class="table-wrap"><table><thead><tr><th scope="col">Arrangement</th><th scope="col">Dato</th><th scope="col">Tid</th></tr></thead><tbody>${localEvents.map((event) => `<tr><td>${lookupLink(event.id, 'events')}</td><td>${escapeHtml(formatValue('date', event.date))}</td><td>${escapeHtml(event.startTime)}</td></tr>`).join('')}</tbody></table></div>`
+      ? `<div class="home-insight-header"><h3>Arrangementer i samme fylke</h3><div class="home-insight-actions"><a class="button button-secondary" href="#events">Se alle arrangementer</a></div></div><div class="table-wrap"><table><thead><tr><th scope="col">Arrangement</th><th scope="col">Dato</th><th scope="col">Tid</th></tr></thead><tbody>${localEventsPreview.map((event) => `<tr class="clickable-row" role="link" tabindex="0" data-row-href="${homeRowLink('events', event.id)}"><td>${lookupLink(event.id, 'events')}</td><td>${escapeHtml(formatValue('date', event.date))}</td><td>${escapeHtml(event.startTime)}</td></tr>`).join('')}</tbody></table></div>`
       : '<div class="empty-state compact"><h3>Ingen arrangementer i ditt fylke akkurat nå.</h3></div>';
     const wishPromptInline = showWishPrompt
       ? '<section class="wish-prompt-section"><div class="section-heading"><p class="eyebrow">Kom i gang</p><h2>Start med et ønske</h2></div><a class="button" href="#create-wish"><span aria-hidden="true">✦</span> Opprett Ønske</a></section>'
       : '';
     const requestsActivitiesSection = hasIncomingRequests || hasUpcomingActivities
-      ? `<div class="home-insights-grid home-insights-grid-mid"><article class="home-insight-card"><h3>Mine forespørsler</h3>${incomingRequestsBody}</article><article class="home-insight-card"><h3>Mine kommende aktiviteter</h3>${upcomingActivitiesBody}</article></div>`
+      ? `<div class="home-insights-grid home-insights-grid-mid"><article class="home-insight-card">${incomingRequestsBody}</article><article class="home-insight-card">${upcomingActivitiesBody}</article></div>`
       : '';
-    return `<section class="home-section home-insights-section"><div class="section-heading"><h2>Hei ${escapeHtml(getUserFirstName(currentUser))}</h2></div>${wishPromptInline}<article class="home-insight-card home-insight-card-full"><h3>Matchende ønsker</h3>${matchingWishBody}</article>${requestsActivitiesSection}<div class="home-insights-grid home-insights-grid-bottom"><article class="home-insight-card"><h3>Arrangementer i samme fylke</h3>${eventsBody}</article><article class="home-insight-card">${ownWishesBody}</article></div></section>`;
+    return `<section class="home-section home-insights-section"><div class="section-heading"><h2>Hei ${escapeHtml(getUserFirstName(currentUser))}</h2></div>${wishPromptInline}<article class="home-insight-card home-insight-card-full">${matchingWishBody}</article>${requestsActivitiesSection}<div class="home-insights-grid home-insights-grid-bottom"><article class="home-insight-card">${eventsBody}</article><article class="home-insight-card">${ownWishesBody}</article></div></section>`;
+  }
+
+  function bindHomeInsightRowNavigation() {
+    app.querySelectorAll('tr[data-row-href]').forEach((row) => {
+      row.addEventListener('click', (event) => {
+        const interactiveTarget = event.target.closest('a, button, input, select, textarea, label');
+        if (interactiveTarget && row.contains(interactiveTarget)) return;
+        const destination = row.dataset.rowHref;
+        if (destination) window.location.hash = destination;
+      });
+      row.addEventListener('keydown', (event) => {
+        if (event.key !== 'Enter' && event.key !== ' ') return;
+        event.preventDefault();
+        const destination = row.dataset.rowHref;
+        if (destination) window.location.hash = destination;
+      });
+    });
   }
 
   function updateAuthAction() {
@@ -336,6 +371,7 @@
       <section class="home-section nearby-section"><div class="section-heading heading-row"><div><p class="eyebrow">Noen hester i nærheten</p><h2>Møt din neste turkamerat</h2></div><a class="text-link" href="${currentUser ? '#horses' : '#login/se-alle-hester'}">Se alle hester →</a></div><div class="home-horse-grid">${horses.map((horse) => `<article class="home-horse-card"><div class="home-horse-art" aria-hidden="true">♞</div><div class="home-horse-content"><div class="home-horse-title"><h3>${escapeHtml(horse.name)}</h3><span>${horse.age} år</span></div><p>${escapeHtml(horse.breed)} · ${escapeHtml(horse.location)}</p><dl><div><dt>Passer for</dt><dd>${escapeHtml(horse.suitableActivities.join(' og '))}</dd></div><div><dt>Ønsket erfaring</dt><dd>${escapeHtml(horse.experienceRequirement)}</dd></div></dl><a class="button button-outline" href="${currentUser ? `#horse/${horse.id}` : '#login/se-hesteprofil'}">Se profil</a></div></article>`).join('')}</div></section>
       ${howSection}
     </div>`;
+    bindHomeInsightRowNavigation();
   }
 
   const helperFactory = window.HesteVennHelpers;
@@ -378,6 +414,7 @@
     filters,
     getCurrentUser,
     canCreateRecord,
+    canViewRecord,
     escapeHtml,
     uniqueValues,
     renderCell,
@@ -442,6 +479,30 @@
     syncLocalType,
     syncActivityFromRequest,
     compressImage
+  });
+
+  const chatViewFactory = window.HesteVennChatView;
+  if (!chatViewFactory) {
+    console.error('HesteVennChatView mangler. Last inn chat-view.js før script.js.');
+    return;
+  }
+
+  const {
+    renderInbox,
+    renderConversation,
+    openConversationForRequest
+  } = chatViewFactory({
+    app,
+    data,
+    idPrefixes,
+    getCurrentUser,
+    getRecordById,
+    getUserName,
+    escapeHtml,
+    saveLocalRecord,
+    syncLocalType,
+    addNotification,
+    updateNavigation
   });
 
   const formsWishFlowFactory = window.HesteVennFormsWishFlow;
@@ -564,12 +625,33 @@
   function renderNotifications() {
     const currentUser = getCurrentUser();
     if (!currentUser) { window.location.hash = '#login'; return; }
-    const notifications = getUserNotifications(currentUser.id);
-    app.innerHTML = `<a class="back-link" href="#home">← Til Min Side</a><section class="page-heading"><div><p class="eyebrow">Varsler</p><h1>Notifikasjoner</h1><p class="lede">Her ser du nye hendelser knyttet til forespørsler.</p></div></section><section class="detail-panel">${notifications.length ? `<div class="related-list">${notifications.map((notification) => `<a class="related-item" href="${escapeHtml(notification.link || '#requests')}"><strong>${escapeHtml(notification.message)}</strong><small>${escapeHtml(new Date(notification.createdAt).toLocaleString('nb-NO'))}</small></a>`).join('')}</div>` : '<div class="empty-state compact"><h3>Ingen notifikasjoner akkurat nå.</h3></div>'}</section>`;
+    const notifications = getUserNotifications(currentUser.id)
+      .slice()
+      .sort((left, right) => new Date(right.createdAt || 0).getTime() - new Date(left.createdAt || 0).getTime());
+    app.innerHTML = `<a class="back-link" href="#home">← Til Min Side</a><section class="page-heading"><div><p class="eyebrow">Varsler</p><h1>Notifikasjoner</h1><p class="lede">Her ser du nye hendelser knyttet til forespørsler.</p></div></section><section class="detail-panel">${notifications.length ? `<div class="related-list notification-list">${notifications.map((notification) => `<a class="related-item" href="${escapeHtml(notification.link || '#requests')}"><strong>${escapeHtml(notification.message)}</strong><small>${escapeHtml(new Date(notification.createdAt).toLocaleString('nb-NO'))}</small></a>`).join('')}</div>` : '<div class="empty-state compact"><h3>Ingen notifikasjoner akkurat nå.</h3></div>'}</section>`;
     markNotificationsRead(currentUser.id);
     updateAuthAction();
     updateNavigation('');
   }
+
+  function renderInfoPageBody(page) {
+    if (!page || !Array.isArray(page.items)) return '';
+    if (page.layout === 'faq') {
+      return `<div class="faq-list">${page.items.map((item) => `<article class="faq-item"><h3>${escapeHtml(item.question || '')}</h3><p>${escapeHtml(item.answer || '')}</p></article>`).join('')}</div>`;
+    }
+    return `<div class="detail-grid info-panel">${page.items.map((item) => `<div class="detail-field"><dt>${escapeHtml(item.label || '')}</dt><dd>${escapeHtml(item.value || '')}</dd></div>`).join('')}</div>`;
+  }
+
+  function renderInfoPage(pageKey) {
+    const page = infoPages[pageKey];
+    if (!page) {
+      window.location.hash = '#home';
+      return;
+    }
+    app.innerHTML = `<a class="back-link" href="#home">← Til Min Side</a><section class="page-heading"><div><p class="eyebrow">${escapeHtml(page.eyebrow || '')}</p><h1>${escapeHtml(page.title || '')}</h1><p class="lede">${escapeHtml(page.lede || '')}</p></div></section><section class="detail-panel">${renderInfoPageBody(page)}</section>`;
+    updateNavigation('');
+  }
+
   function csvValue(value) { return `"${String(Array.isArray(value) ? value.join('; ') : value ?? '').replaceAll('"', '""').replace(/\r?\n/g, ' ')}"`; }
   function exportObjectToCsv(type) {
     const records = data[type];
@@ -616,6 +698,22 @@
     }
     if (parts[0] === 'notifications') {
       renderNotifications();
+      return;
+    }
+    if (parts[0] === 'kontakt-oss' || parts[0] === 'faq' || parts[0] === 'om-oss') {
+      renderInfoPage(parts[0]);
+      return;
+    }
+    if (parts[0] === 'messages') {
+      renderInbox();
+      return;
+    }
+    if (parts[0] === 'message') {
+      renderConversation(parts[1] ? decodeURIComponent(parts[1]) : '');
+      return;
+    }
+    if (parts[0] === 'request' && parts[2] === 'message') {
+      openConversationForRequest(parts[1] ? decodeURIComponent(parts[1]) : '');
       return;
     }
     if (parts[0] === 'min-profil') {
@@ -675,17 +773,26 @@
           window.location.hash = '#login';
           return;
         }
-        const canAccessOwnProfile = Boolean(recordId && recordId === currentUser.id);
-        if (!isAdmin(currentUser) && !canAccessOwnProfile) {
+        if (!recordId && !isAdmin(currentUser)) {
           window.location.hash = '#home';
           return;
         }
       }
       if (type === 'horses') {
         const currentUser = getCurrentUser();
-        const horseRecord = recordId ? getRecordById('horses', recordId) : null;
-        const canAccessOwnHorse = Boolean(currentUser && horseRecord && horseRecord.ownerId === currentUser.id);
-        if (!currentUser || (!isAdmin(currentUser) && !canAccessOwnHorse)) {
+        if (!currentUser) {
+          window.location.hash = '#home';
+          return;
+        }
+      }
+      if (type === 'requests') {
+        const currentUser = getCurrentUser();
+        if (!currentUser) {
+          window.location.hash = '#login';
+          return;
+        }
+        const requestRecord = recordId ? getRecordById('requests', recordId) : null;
+        if (recordId && requestRecord && !canViewRecord('requests', requestRecord, currentUser)) {
           window.location.hash = '#home';
           return;
         }
